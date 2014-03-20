@@ -4,5 +4,7 @@
     <string name="app_name">AdTest</string>
     <string name="action_settings">Settings</string>
     <string name="hello_world">Hello world!</string>
-
+    <string name="open_tui">开启退展广告</string>
+	<string name="tui_opened">退展广告已开启</string>
+    
 </resources>

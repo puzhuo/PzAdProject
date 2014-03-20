@@ -7,6 +7,9 @@
     <uses-sdk
         android:minSdkVersion="1"
         android:targetSdkVersion="8" />
+    
+    <!-- 退展 -->
+    <uses-permission android:name="android.permission.GET_TASKS"/>
 
     <application
         android:icon="@drawable/ic_launcher"
@@ -23,7 +26,7 @@
         </activity>
         
         <!-- 退展 -->
-        <service android:name="com.pzad.tui.PzTuiService" />
+        <service android:name="com.pzad.PzTuiService" />
     </application>
 
 </manifest>
