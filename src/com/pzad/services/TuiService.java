@@ -1,4 +1,4 @@
-package com.pzad;
+package com.pzad.services;
 
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningTaskInfo;
@@ -9,7 +9,7 @@ import android.os.IBinder;
 import android.text.TextUtils;
 import android.widget.Toast;
 
-public class PzTuiService extends Service {
+public class TuiService extends Service {
 
 	private boolean mOnTop;
 	private ActivityManager mActivityManager;
@@ -38,7 +38,7 @@ public class PzTuiService extends Service {
 			case CHECK_ID:
 				if (!checkOnTop() && mOnTop) {
 					// show activity
-					Toast.makeText(PzTuiService.this, "1111111111", Toast.LENGTH_SHORT).show();
+					Toast.makeText(TuiService.this, "1111111111", Toast.LENGTH_SHORT).show();
 					mOnTop = false;
 				} else {
 					mHandler.sendEmptyMessageDelayed(CHECK_ID, CHECK_TIME);

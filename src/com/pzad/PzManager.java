@@ -1,29 +1,60 @@
 package com.pzad;
 
-import java.util.ArrayList;
+import java.lang.reflect.InvocationTargetException;
+
+import com.pzad.category.BaseAdsCategory;
 
 import android.content.Context;
-import android.content.Intent;
 
 
 public class PzManager {
-
-	private static final int APP_LOW_LIMIT  = 10;
-	private static final int BANNER_LOW_LIMIT  = 2;
-	private static final String PZAD_URL = "http://appad.aawap.net/browser_admin/ad_list";
 	
-	private ArrayList<AppInfo> mAppInfos = new ArrayList<AppInfo>();
-	private ArrayList<BannerInfo> mBannerInfos = new ArrayList<BannerInfo>();
+	public static final String CATEGORY_FLOAT = ".floatads.FloatAdsCategory";
+	//public static final String CATEGORY_INTERCEPT = ".interceptads.InterceptAdsCategory";
+	public static final String CATEGORY_TUI = ".tuiads.TuiAdsCategory";
+	public static final String CATEGORY_BANNER = ".bannerads.BannerAdsCategory";
 	
-	private boolean hasInited() {
-		return ((mAppInfos != null && mAppInfos.size() >= APP_LOW_LIMIT) && (mBannerInfos != null && mBannerInfos.size() >= BANNER_LOW_LIMIT));
+	private static PzManager pzManager;
+    private Context context;
+	
+	public PzManager(Context context){
+		this.context = context;
 	}
 	
-	private void init() {
-		// to get the ad info and store them in mAppInfos and mBannerInfos 
+	public static PzManager getInstance(Context context){
+		if(pzManager == null){
+			pzManager = new PzManager(context);
+		}
+		
+		return pzManager;
 	}
 	
-	public static void startTui(Context context) {
-		context.startService(new Intent(context, PzTuiService.class));
+	public BaseAdsCategory build(String category){
+		
+		BaseAdsCategory categoryInstance = null;
+		
+		try{
+			Class<?> clazz = Class.forName("com.pzad.category" + category);
+			
+			categoryInstance = (BaseAdsCategory) clazz.getConstructors()[0].newInstance(context);
+		} catch (ClassNotFoundException e){
+			e.printStackTrace();
+		} catch (IllegalAccessException e) {
+			e.printStackTrace();
+		} catch (InstantiationException e) {
+			e.printStackTrace();
+		} catch (SecurityException e) {
+			e.printStackTrace();
+		} catch (IllegalArgumentException e) {
+			e.printStackTrace();
+		} catch (InvocationTargetException e) {
+			e.printStackTrace();
+		}
+		
+		return categoryInstance;
+	}
+	
+	public void destroy(){
+		pzManager = null;
 	}
 }

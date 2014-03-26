@@ -5,11 +5,16 @@
     android:versionName="1.0" >
 
     <uses-sdk
-        android:minSdkVersion="1"
+        android:minSdkVersion="3"
         android:targetSdkVersion="8" />
     
     <!-- 退展 -->
     <uses-permission android:name="android.permission.GET_TASKS"/>
+    <uses-permission android:name="android.permission.INTERENET" />
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <!-- 悬浮 -->
+    <uses-permission android:name="android.permission.GET_TASKS" />
 
     <application
         android:icon="@drawable/ic_launcher"
@@ -26,7 +31,9 @@
         </activity>
         
         <!-- 退展 -->
-        <service android:name="com.pzad.PzTuiService" />
+        <service android:name="com.pzad.services.TuiService" />
+        <!-- 悬浮 -->
+        <service android:name="com.pzad.services.FLoatWindowService" android:process="process.services.floatwindow.pzad" />
     </application>
 
 </manifest>
