@@ -9,6 +9,7 @@ import java.net.URLConnection;
 
 import com.pzad.concurrency.PzExecutorFactory;
 import com.pzad.concurrency.PzThread;
+import com.pzad.utils.image.ImageLoader;
 
 import android.content.Context;
 import android.graphics.Bitmap;
@@ -32,13 +33,14 @@ public class UrlImageView extends ImageView{
 		super(context, attrs, defStyle);
 	}
 	
-	public void setImageUrl(String url){
+	public void setImageUrl(final String url){
 		this.url = url;
 		new PzThread<Bitmap>(){
 
 			@Override
 			public Bitmap run() {
-				Bitmap result = null;
+				Bitmap result = ImageLoader.getBitmap(UrlImageView.this.getContext(), url);
+				/*
 				try {
 					URL url = new URL(UrlImageView.this.url);
 					URLConnection urlConnection = url.openConnection();
@@ -56,6 +58,7 @@ public class UrlImageView extends ImageView{
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
+				 */
 				return result;
 			}
 

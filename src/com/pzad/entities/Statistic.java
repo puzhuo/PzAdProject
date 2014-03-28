@@ -1,4 +1,4 @@
-package com.pzad.category.entities;
+package com.pzad.entities;
 
 import java.io.Serializable;
 

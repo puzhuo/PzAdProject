@@ -4,7 +4,7 @@ import android.content.Context;
 
 import com.pzad.category.AdsArgs;
 import com.pzad.category.BaseAdsCategory;
-import com.pzad.category.entities.Statistic;
+import com.pzad.entities.Statistic;
 
 public class InterceptAdsCategory extends BaseAdsCategory{
 

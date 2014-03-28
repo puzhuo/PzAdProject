@@ -80,6 +80,8 @@ public class AdsInfoProvider {
 	}
 	
 	private void getAdInfo(){
+		appInfos.clear();
+		bannerInfos.clear();
 		new PzThread<Void>(){
 
 			@Override
@@ -104,7 +106,6 @@ public class AdsInfoProvider {
 							appInfos.add(appInfo);
 						}
 						
-						PLog.d("appInfos", appInfos.toString());
 					}
 					
 					JSONArray bannerArray = object.getJSONArray(BANNER_ARRAY_NAME);
@@ -119,7 +120,6 @@ public class AdsInfoProvider {
 							bannerInfo.setLink(jsonObject.optString(BANNER_LINK));
 							bannerInfos.add(bannerInfo);
 						}
-						PLog.d("bannerInfos", bannerInfos.toString());
 					}
 					
 				} catch (Exception e) {
@@ -132,7 +132,6 @@ public class AdsInfoProvider {
 
 			@Override
 			public void onFinish(Void result) {
-				PLog.d("finish", "thread");
 				onAdsGot();
 			}
 			

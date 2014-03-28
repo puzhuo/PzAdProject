@@ -9,9 +9,9 @@ import android.widget.FrameLayout;
 
 import com.pzad.category.AdsArgs;
 import com.pzad.category.BaseAdsCategory;
-import com.pzad.category.entities.Statistic;
 import com.pzad.entities.AppInfo;
 import com.pzad.entities.BannerInfo;
+import com.pzad.entities.Statistic;
 import com.pzad.utils.AdsInfoProvider;
 import com.pzad.utils.AdsInfoProvider.OnAdsGotListener;
 import com.pzad.utils.PLog;
@@ -33,7 +33,6 @@ public class BannerAdsCategory extends BaseAdsCategory {
 			rootLayout = (FrameLayout) currentActivity.findViewById(android.R.id.content);
 			iv = new BannerImageView(currentActivity);
 			if(!AdsInfoProvider.getInstance(getContext()).isAdsDataAvailable()){
-				PLog.d("banner", "obtaininfo");
 				AdsInfoProvider.getInstance(getContext()).registerAdsGotListener(new OnAdsGotListener(){
 
 					@Override
@@ -44,13 +43,12 @@ public class BannerAdsCategory extends BaseAdsCategory {
 				});
 			}else{
 				iv.setBannerInfo(AdsInfoProvider.getInstance(getContext()).obtainBannerInfo().get(1));
-				PLog.d("banner", "hasinfo");
 			}
 			
 			int gravity = Gravity.TOP;
 			if(args != null && args.length > 0){
 				for(AdsArgs arg : args){
-					if(arg.category == BaseAdsCategory.CATEGORY_BANNER){
+					if((arg.category & BaseAdsCategory.CATEGORY_BANNER) != 0){
 						gravity = arg.bannerAdsGravity;
 						break;
 					}

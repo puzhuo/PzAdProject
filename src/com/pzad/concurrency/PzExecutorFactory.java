@@ -1,27 +1,28 @@
 package com.pzad.concurrency;
 
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
 
 public class PzExecutorFactory {
 	
-	private static ThreadPoolExecutor singleThreadPool;
-	private static ThreadPoolExecutor imageLoadThreadPool;
+	private static ExecutorService singleThreadPool;
+	private static ExecutorService imageLoadThreadPool;
 	
-	public static ThreadPoolExecutor getSingleThreadPool(){
+	public static ExecutorService getSingleThreadPool(){
 		if(singleThreadPool == null){
-			singleThreadPool = new ThreadPoolExecutor(1, 1, 1, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(1));
+			singleThreadPool = Executors.newFixedThreadPool(1);
 		}
 		
 		return singleThreadPool;
 	}
 
-	public static ThreadPoolExecutor getImageLoadThreadPool(){
+	public static ExecutorService getImageLoadThreadPool(){
 		if(imageLoadThreadPool == null){
-			imageLoadThreadPool = new ThreadPoolExecutor(10, 15, 1, TimeUnit.SECONDS, new ArrayBlockingQueue<Runnable>(15));
+			//imageLoadThreadPool = Executors.newFixedThreadPool(15);
+			imageLoadThreadPool = Executors.newCachedThreadPool();
 		}
 		
 		return imageLoadThreadPool;
 	}
+	
 }
