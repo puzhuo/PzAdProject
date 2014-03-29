@@ -10,7 +10,6 @@ import android.content.Intent;
 import android.content.res.ColorStateList;
 import android.graphics.drawable.StateListDrawable;
 import android.net.Uri;
-import android.text.TextUtils;
 import android.text.TextUtils.TruncateAt;
 import android.util.AttributeSet;
 import android.util.TypedValue;
@@ -23,6 +22,8 @@ public class AppBlock extends RelativeLayout{
 
 	private UrlImageView appIconView;
 	private TextView appName;
+	private TextView appSize;
+	private PzRatingBar ratingBar;
 	
 	private View dividerHorizontal;
 	private View dividerVertical;
@@ -53,24 +54,47 @@ public class AppBlock extends RelativeLayout{
 		ColorStateList appNameStateList = new ColorStateList(new int[][]{new int[]{android.R.attr.state_pressed}, new int[]{-android.R.attr.state_pressed}}, new int[]{Constants.GLOBAL_HIGHLIGHT_COLOR, 0xFF000000});
 		
 		appName = new TextView(context, attrs, defStyle);
+		appName.setId(1024 * 255);
 		appName.setSingleLine(true);
 		appName.setEllipsize(TruncateAt.END);
 		appName.setTextSize(TypedValue.COMPLEX_UNIT_SP, 13);
 		appName.setTextColor(appNameStateList);
 		appName.setGravity(Gravity.CENTER);
-		appName.setPadding(appName.getPaddingLeft() + 2, appName.getPaddingTop(), appName.getPaddingRight() + 2, appName.getPaddingBottom() + 10);
-		RelativeLayout.LayoutParams appNameLayoutParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+		appName.setPadding(appName.getPaddingLeft() + 2, appName.getPaddingTop(), appName.getPaddingRight() + 2, appName.getPaddingBottom());
+		RelativeLayout.LayoutParams appNameLayoutParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.WRAP_CONTENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
 		appNameLayoutParams.addRule(RelativeLayout.BELOW, appIconView.getId());
+		appNameLayoutParams.addRule(RelativeLayout.CENTER_HORIZONTAL);
 		int appNameMargin = CalculationUtil.dip2px(context, 5);
 		appNameLayoutParams.setMargins(appNameMargin, 0, appNameMargin, 0);
 		
 		addView(appName, appNameLayoutParams);
 		
+		ColorStateList appSizeStateList = new ColorStateList(new int[][]{new int[]{android.R.attr.state_pressed}, new int[]{-android.R.attr.state_pressed}}, new int[]{(Constants.GLOBAL_HIGHLIGHT_COLOR & 0xFFFFFF) | 0x66000000, 0x66000000});
+		
+		appSize = new TextView(context, attrs, defStyle);
+		appSize.setId(1024 * 254);
+		appSize.setTextSize(TypedValue.COMPLEX_UNIT_SP, 12);
+		appSize.setTextColor(appSizeStateList);
+		appSize.setGravity(Gravity.LEFT);
+		RelativeLayout.LayoutParams appSizeLayoutParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+		appSizeLayoutParams.addRule(RelativeLayout.BELOW, appName.getId());
+		appSizeLayoutParams.addRule(RelativeLayout.ALIGN_LEFT, appName.getId());
+        
+        addView(appSize, appSizeLayoutParams);
+        
+        ratingBar = new PzRatingBar(context, attrs);
+        RelativeLayout.LayoutParams ratingLayoutParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, CalculationUtil.dip2px(context, 30));
+        ratingLayoutParams.addRule(RelativeLayout.BELOW, appSize.getId());
+        ratingLayoutParams.setMargins(appNameMargin * 2, 0, appNameMargin * 2, 0);
+        
+        addView(ratingBar, ratingLayoutParams);
+        ratingBar.setRating(Math.round(Math.random() * 10) * 0.5F);
+		
 		int backgroundCorner = CalculationUtil.dip2px(context, 4);
 		StateListDrawable stateDrawable = new StateListDrawable();
-		stateDrawable.addState(new int[]{android.R.attr.state_pressed}, new PzRoundCornerDrawable(backgroundCorner, 0xFFF5F5F5, false));
+		stateDrawable.addState(new int[]{android.R.attr.state_pressed}, new PzRoundCornerDrawable(backgroundCorner, 0xFFEEEEEE, 1, 0, 0, 0x33000000));
 		//int lightHighLight = (Constants.GLOBAL_HIGHLIGHT_COLOR & 0xFFFFFF) | 0x10000000;
-		stateDrawable.addState(new int[]{-android.R.attr.state_pressed}, new PzRoundCornerDrawable(backgroundCorner, 0, false));
+		stateDrawable.addState(new int[]{-android.R.attr.state_pressed}, new PzRoundCornerDrawable(backgroundCorner, 0xFFFFFFFF, 3, 0, 2, 0x33000000));
 		
 		/*
 		
@@ -98,6 +122,7 @@ public class AppBlock extends RelativeLayout{
 			this.appInfo = appInfo;
 			appIconView.setImageUrl(appInfo.getIcon());
 			appName.setText(appInfo.getName());
+			appSize.setText(appInfo.getSize());
 			setClickable(true);
 			setOnClickListener(new OnClickListener(){
 

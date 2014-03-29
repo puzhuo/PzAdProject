@@ -178,7 +178,8 @@ public class FloatDetailView extends RelativeLayout{
 		contentBackgroundParams.addRule(RelativeLayout.ABOVE, buttonLayout.getId());
 		
 		addView(gridView, contentBackgroundParams);
-		gridView.setBackgroundDrawable(new PzRoundCornerDrawable(CalculationUtil.dip2px(context, 2), Constants.GLOBAL_BACKGROUND_COLOR, 3, 0, 1, 0x44000000));
+		//gridView.setBackgroundDrawable(new PzRoundCornerDrawable(CalculationUtil.dip2px(context, 2), Constants.GLOBAL_BACKGROUND_COLOR, 3, 0, 1, 0x44000000));
+		gridView.setBackgroundColor(0xFFDDDDDD);
 		gridView.setNumColumns(3);
 		gridView.setVerticalFadingEdgeEnabled(false);
 		gridView.setFadingEdgeLength(0);
@@ -186,7 +187,7 @@ public class FloatDetailView extends RelativeLayout{
 		gridView.setVerticalSpacing(gridViewPadding);
 		gridView.setHorizontalSpacing(gridViewPadding);
 		gridViewPadding *= 0.8F;
-		gridView.setPadding(gridViewPadding, gridViewPadding, gridViewPadding, gridViewPadding);
+		gridView.setPadding(gridViewPadding, 0, gridViewPadding, 0);
 		gridViewAdapterDatas = new ArrayList<AppInfo>();
 		gridViewAdapter = new DetailGridViewAdapter(context, gridViewAdapterDatas);
 		gridView.setAdapter(gridViewAdapter);
@@ -204,7 +205,7 @@ public class FloatDetailView extends RelativeLayout{
 			}
 		});
 		
-		setBackgroundDrawable(new PzRoundCornerDrawable(CalculationUtil.dip2px(FloatDetailView.this.getContext(), 6), 0xFFF5F5F5, true));
+		setBackgroundDrawable(new PzRoundCornerDrawable(CalculationUtil.dip2px(FloatDetailView.this.getContext(), 6), 0xFFFFFFFF, true));
 	}
 	
 	public void setParams(WindowManager.LayoutParams layoutParams){

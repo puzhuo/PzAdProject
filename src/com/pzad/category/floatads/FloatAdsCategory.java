@@ -107,7 +107,7 @@ public class FloatAdsCategory extends BaseAdsCategory{
 		floatDetailLayoutParams.format = PixelFormat.RGBA_8888;
 		floatDetailLayoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
 		floatDetailLayoutParams.gravity = Gravity.CENTER;
-		floatDetailLayoutParams.width = SystemMeasurementUtil.getScreenMeasurement(context)[0] - CalculationUtil.dip2px(context, 40);
+		floatDetailLayoutParams.width = SystemMeasurementUtil.getScreenMeasurement(context)[0] - CalculationUtil.dip2px(context, 50);
 		floatDetailLayoutParams.height = SystemMeasurementUtil.getScreenMeasurement(context)[0];
 		
 		if(initParams != null && initParams.length > 1){

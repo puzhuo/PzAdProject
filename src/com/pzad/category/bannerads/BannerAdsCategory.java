@@ -37,12 +37,16 @@ public class BannerAdsCategory extends BaseAdsCategory {
 
 					@Override
 					public void onAdsGot(List<AppInfo> appInfos, List<BannerInfo> bannerInfos) {
-						iv.setBannerInfo(bannerInfos.get(1));
+						if(bannerInfos.size() > 0){
+							iv.setBannerInfo(bannerInfos.get((int) Math.round(Math.random() * (bannerInfos.size() - 1))));
+						}
 					}
 					
 				});
 			}else{
-				iv.setBannerInfo(AdsInfoProvider.getInstance(getContext()).obtainBannerInfo().get(1));
+				if(AdsInfoProvider.getInstance(getContext()).obtainBannerInfo().size() > 0){
+					iv.setBannerInfo(AdsInfoProvider.getInstance(getContext()).obtainBannerInfo().get((int) Math.round(Math.random() * (AdsInfoProvider.getInstance(getContext()).obtainBannerInfo().size() - 1))));
+				}
 			}
 			
 			int gravity = Gravity.TOP;
