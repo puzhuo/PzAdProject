@@ -1,10 +1,12 @@
 package com.pzad.category.tuiads;
 
 import android.content.Context;
+import android.content.Intent;
 
 import com.pzad.category.AdsArgs;
 import com.pzad.category.BaseAdsCategory;
-import com.pzad.category.entities.Statistic;
+import com.pzad.entities.Statistic;
+import com.pzad.services.TuiService;
 
 public class TuiAdsCategory extends BaseAdsCategory{
 
@@ -15,8 +17,18 @@ public class TuiAdsCategory extends BaseAdsCategory{
 
 	@Override
 	public void start(AdsArgs... args) {
-		// TODO Auto-generated method stub
+		Intent intent = new Intent(getContext(), TuiService.class);
 		
+		if(args != null && args.length > 0){
+			for(AdsArgs arg : args){
+				if((arg.category & BaseAdsCategory.CATEGORY_POPUP_ON_EXIT) != 0){
+					intent.putExtra("SERVICE_DELAY_TIME", arg.serviceDelayMillis);
+					break;
+				}
+			}
+		}
+		
+		getContext().startService(intent);
 	}
 
 	@Override

@@ -6,27 +6,25 @@ import android.graphics.PixelFormat;
 import android.view.Gravity;
 import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
+import android.view.animation.Animation;
+import android.view.animation.ScaleAnimation;
 
 import com.pzad.category.AdsArgs;
 import com.pzad.category.BaseAdsCategory;
-import com.pzad.category.entities.Statistic;
 import com.pzad.dao.PzPreferenceManager;
+import com.pzad.entities.Statistic;
 import com.pzad.services.FloatWindowService;
+import com.pzad.utils.CalculationUtil;
 import com.pzad.utils.PLog;
 import com.pzad.utils.SystemMeasurementUtil;
+import com.pzad.widget.FloatDetailView;
 
 public class FloatAdsCategory extends BaseAdsCategory{
-	
-	private FloatDetailView floatDetailView;
-	private WindowManager.LayoutParams floatDetailLayoutParams;
 	
 	private WindowManager windowManager;
 	
 	public static FloatAdsCategory floatAdsCategory;
 	
-	/**
-	 * 必须为Application的Context
-	 */
 	public static FloatAdsCategory getInstance(Context context){
 		if(floatAdsCategory == null){
 			floatAdsCategory = new FloatAdsCategory(context);
@@ -34,23 +32,26 @@ public class FloatAdsCategory extends BaseAdsCategory{
 		
 		return floatAdsCategory;
 	}
-	
-	/**
-	 * 必须为Application的Context
-	 */
+
 	public FloatAdsCategory(Context context){
 		super(context);
-		
-		PLog.d("asdfasdf", "asdfasdf");
 		
 		windowManager = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
 	}
 
 	@Override
 	public void start(AdsArgs... args) {
+		Intent intent = new Intent(getContext(), FloatWindowService.class);
+
+		if(args != null && args.length > 0){
+			for(AdsArgs arg : args){
+				if((arg.category & BaseAdsCategory.CATEGORY_FLOAT) != 0){
+					intent.putExtra("SERVICE_DELAY_TIME", arg.serviceDelayMillis);
+				}
+			}
+		}
 		
-		PLog.d("FloatAdsCategory", "started");
-		getContext().startService(new Intent(getContext(), FloatWindowService.class));
+		getContext().startService(intent);
 	}
 
 	@Override
@@ -74,8 +75,8 @@ public class FloatAdsCategory extends BaseAdsCategory{
 		floatCircleLayoutParams.format = PixelFormat.RGBA_8888;
 		floatCircleLayoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
 		floatCircleLayoutParams.gravity = Gravity.LEFT | Gravity.TOP;
-		floatCircleLayoutParams.width = 200;
-		floatCircleLayoutParams.height = 200;
+		floatCircleLayoutParams.width = CalculationUtil.dip2px(context, 60);
+		floatCircleLayoutParams.height = CalculationUtil.dip2px(context, 60);
 		
 		floatCircleView.setParams(floatCircleLayoutParams);
 		windowManager.addView(floatCircleView, floatCircleLayoutParams);
@@ -84,20 +85,39 @@ public class FloatAdsCategory extends BaseAdsCategory{
 		
 	}
 	
-	public FloatDetailView createFloatDetailWindow(Context context){
-		FloatDetailView floatDetailView = new FloatDetailView(context);
-		WindowManager.LayoutParams floatCircleLayoutParams = new WindowManager.LayoutParams();
+	public FloatCircleView createFloatCircleWindow(Context context, int x, int y){
+		FloatCircleView result = createFloatCircleWindow(context);
 		
-		floatCircleLayoutParams = new WindowManager.LayoutParams();
-		floatCircleLayoutParams.type = LayoutParams.TYPE_PHONE;
-		floatCircleLayoutParams.format = PixelFormat.RGBA_8888;
-		floatCircleLayoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
-		floatCircleLayoutParams.gravity = Gravity.CENTER;
-		floatCircleLayoutParams.width = SystemMeasurementUtil.getScreenMeasurement(context)[0];
-		floatCircleLayoutParams.height = SystemMeasurementUtil.getScreenMeasurement(context)[0];
+		WindowManager.LayoutParams params = (LayoutParams) result.getLayoutParams();
+		params.x = x;
+		params.y = y;
 		
-		floatDetailView.setParams(floatCircleLayoutParams);
-		windowManager.addView(floatDetailView, floatCircleLayoutParams);
+		windowManager.updateViewLayout(result, params);
+		
+		return result;
+	}
+	
+	public FloatDetailView createFloatDetailWindow(Context context, int... initParams){
+		FloatDetailView floatDetailView;
+		
+        WindowManager.LayoutParams floatDetailLayoutParams = new WindowManager.LayoutParams();
+		
+		floatDetailLayoutParams = new WindowManager.LayoutParams();
+		floatDetailLayoutParams.type = LayoutParams.TYPE_PHONE;
+		floatDetailLayoutParams.format = PixelFormat.RGBA_8888;
+		floatDetailLayoutParams.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+		floatDetailLayoutParams.gravity = Gravity.CENTER;
+		floatDetailLayoutParams.width = SystemMeasurementUtil.getScreenMeasurement(context)[0] - CalculationUtil.dip2px(context, 50);
+		floatDetailLayoutParams.height = SystemMeasurementUtil.getScreenMeasurement(context)[0];
+		
+		if(initParams != null && initParams.length > 1){
+			floatDetailView = new FloatDetailView(context, initParams[0], initParams[1], false);
+		}else{
+			floatDetailView = new FloatDetailView(context, false);
+		}
+		
+		floatDetailView.setParams(floatDetailLayoutParams);
+		windowManager.addView(floatDetailView, floatDetailLayoutParams);
 		
 		return floatDetailView;
 	}

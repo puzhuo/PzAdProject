@@ -6,10 +6,11 @@ import com.pzad.category.api.AdsCycleAPI;
 
 public abstract class BaseAdsCategory implements AdsCycleAPI{
 	
-	public static final int CATEGORY_FLOAT_ADS = 0x1;
+	public static final int CATEGORY_FLOAT = 0x1;
 	public static final int CATEGORY_BANNER = 0x2;
 	public static final int CATEGORY_POPUP_ON_RUN = 0x4;
 	public static final int CATEGORY_POPUP_ON_EXIT = 0x8;
+	public static final int CATEGORY_INTERCEPT = 0x10;
 	
 	private Context context;
 	

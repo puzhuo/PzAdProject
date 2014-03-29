@@ -9,9 +9,9 @@ import android.widget.FrameLayout;
 
 import com.pzad.category.AdsArgs;
 import com.pzad.category.BaseAdsCategory;
-import com.pzad.category.entities.Statistic;
 import com.pzad.entities.AppInfo;
 import com.pzad.entities.BannerInfo;
+import com.pzad.entities.Statistic;
 import com.pzad.utils.AdsInfoProvider;
 import com.pzad.utils.AdsInfoProvider.OnAdsGotListener;
 import com.pzad.utils.PLog;
@@ -33,24 +33,26 @@ public class BannerAdsCategory extends BaseAdsCategory {
 			rootLayout = (FrameLayout) currentActivity.findViewById(android.R.id.content);
 			iv = new BannerImageView(currentActivity);
 			if(!AdsInfoProvider.getInstance(getContext()).isAdsDataAvailable()){
-				PLog.d("banner", "obtaininfo");
 				AdsInfoProvider.getInstance(getContext()).registerAdsGotListener(new OnAdsGotListener(){
 
 					@Override
 					public void onAdsGot(List<AppInfo> appInfos, List<BannerInfo> bannerInfos) {
-						iv.setBannerInfo(bannerInfos.get(1));
+						if(bannerInfos.size() > 0){
+							iv.setBannerInfo(bannerInfos.get((int) Math.round(Math.random() * (bannerInfos.size() - 1))));
+						}
 					}
 					
 				});
 			}else{
-				iv.setBannerInfo(AdsInfoProvider.getInstance(getContext()).obtainBannerInfo().get(1));
-				PLog.d("banner", "hasinfo");
+				if(AdsInfoProvider.getInstance(getContext()).obtainBannerInfo().size() > 0){
+					iv.setBannerInfo(AdsInfoProvider.getInstance(getContext()).obtainBannerInfo().get((int) Math.round(Math.random() * (AdsInfoProvider.getInstance(getContext()).obtainBannerInfo().size() - 1))));
+				}
 			}
 			
 			int gravity = Gravity.TOP;
 			if(args != null && args.length > 0){
 				for(AdsArgs arg : args){
-					if(arg.category == BaseAdsCategory.CATEGORY_BANNER){
+					if((arg.category & BaseAdsCategory.CATEGORY_BANNER) != 0){
 						gravity = arg.bannerAdsGravity;
 						break;
 					}

@@ -11,7 +11,7 @@ public class PzManager {
 	
 	public static final String CATEGORY_FLOAT = ".floatads.FloatAdsCategory";
 	//public static final String CATEGORY_INTERCEPT = ".interceptads.InterceptAdsCategory";
-	public static final String CATEGORY_TUI = ".tuiads.TuiAdsCategory";
+	public static final String CATEGORY_POPUP_ON_EXIT = ".tuiads.TuiAdsCategory";
 	public static final String CATEGORY_BANNER = ".bannerads.BannerAdsCategory";
 	
 	private static PzManager pzManager;
