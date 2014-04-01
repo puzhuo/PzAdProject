@@ -9,50 +9,58 @@ import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import android.app.ActivityManager;
+import android.app.ActivityManager.RunningAppProcessInfo;
+import android.app.ActivityManager.RunningTaskInfo;
+import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
+import android.os.Bundle;
+import android.os.Handler;
+import android.os.IBinder;
+import android.os.Message;
+import android.os.Parcelable;
+import android.view.WindowManager;
+import android.view.WindowManager.LayoutParams;
+
 import com.pzad.category.floatads.FloatAdsCategory;
 import com.pzad.category.floatads.FloatCircleView;
 import com.pzad.entities.AppInfo;
 import com.pzad.entities.BannerInfo;
 import com.pzad.utils.AdsInfoProvider;
 import com.pzad.utils.AdsInfoProvider.OnAdsGotListener;
-import com.pzad.utils.CalculationUtil;
 import com.pzad.utils.PLog;
 import com.pzad.widget.FloatDetailView;
-import com.pzad.widget.PzCloseButton;
-
-import android.app.ActivityManager;
-import android.app.ActivityManager.MemoryInfo;
-import android.app.ActivityManager.RunningAppProcessInfo;
-import android.app.ActivityManager.RunningTaskInfo;
-import android.app.Service;
-import android.content.Context;
-import android.content.Intent;
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
-import android.os.Handler;
-import android.os.IBinder;
-import android.os.Message;
-import android.view.View;
-import android.view.WindowManager;
-import android.view.View.OnClickListener;
-import android.view.WindowManager.LayoutParams;
-import android.widget.RelativeLayout;
 
 public class FloatWindowService extends Service{
 	
 	private static final int HANDLE_REFRESH_MEMORY_PERCENTAGE = 0;
 	private static final int HANDLE_CREATE_FLOAT_VIEW = 1;
-	private static final int HANDLE_DESTROY_FLOAT_VIEW = 2;
+	private static final int HANDLE_DESTROY_FLOAT_CIRCLE_VIEW = 2;
 	private static final int HANDLE_RECEIVE_DETAIL_DATA = 3;
+	private static final int HANDLE_HIDE_FLOAT_DETAIL_VIEW = 4;
+	private static final int HANDLE_RESTORE_FLOAT_DETAIL_VIEW = 5;
+	
+	public static final String ACTION_HIDE_FLOAT_DETAIL = "com.pzad.floatdetailview.HIDE";
 	
 	private boolean isOtherFloatWindowRunning;
+	
+	private boolean isInDetailMode;
 	
 	private long delayMillis = 500L;
 
 	private FloatCircleView floatCircleView;
 	private FloatDetailView floatDetailView;
 	
+	private Parcelable floatDetailSavedState;
+	
 	private WindowManager windowManager;
+	
+	private FloatEventReceiver floatEventReceiver;
 	
 	private FloatHandler handler;
 	private Timer timer;
@@ -61,13 +69,13 @@ public class FloatWindowService extends Service{
 		@Override
 		public void run() {
 			
-			if(!isOtherFloatWindowRunning && floatCircleView == null && floatDetailView == null && isHome()){
+			if(!isOtherFloatWindowRunning && floatCircleView == null && floatDetailView == null && isHome() && !isInDetailMode){
 				Message msg = handler.obtainMessage(HANDLE_CREATE_FLOAT_VIEW);
 				msg.sendToTarget();
 			}
 			
-			if(!isHome() && (floatCircleView != null || floatDetailView != null)){
-				Message msg = handler.obtainMessage(HANDLE_DESTROY_FLOAT_VIEW);
+			if(!isHome() && (floatCircleView != null || floatDetailView != null) && !isInDetailMode){
+				Message msg = handler.obtainMessage(HANDLE_DESTROY_FLOAT_CIRCLE_VIEW);
 				msg.sendToTarget();
 			}
 			
@@ -78,6 +86,11 @@ public class FloatWindowService extends Service{
 			
 			if(isHome() && floatDetailView != null){
 				Message msg = handler.obtainMessage(HANDLE_RECEIVE_DETAIL_DATA);
+				msg.sendToTarget();
+			}
+			
+			if(isHome() && floatDetailView == null && isInDetailMode && !isOtherFloatWindowRunning){
+				Message msg = handler.obtainMessage(HANDLE_RESTORE_FLOAT_DETAIL_VIEW);
 				msg.sendToTarget();
 			}
 		}
@@ -100,6 +113,7 @@ public class FloatWindowService extends Service{
 	public void onCreate(){
 		PLog.d("service", "started");
         isOtherFloatWindowRunning = false;
+        isInDetailMode = false;
         
         windowManager = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
 		
@@ -112,11 +126,17 @@ public class FloatWindowService extends Service{
 			}
 		}
 		
+		floatEventReceiver = new FloatEventReceiver();
+		IntentFilter intentFilter = new IntentFilter();
+		intentFilter.addAction(ACTION_HIDE_FLOAT_DETAIL);
+		
+		registerReceiver(floatEventReceiver, intentFilter);
+		
 	}
 	
 	@Override
-	public void onStart(Intent intent, int flags){
-		super.onStart(intent, flags);
+	public void onStart(Intent intent, int startId){
+		super.onStart(intent, startId);
 		
 		if(intent.getExtras() != null && intent.getExtras().containsKey("SERVICE_DELAY_TIME")){
 			delayMillis = intent.getExtras().getLong("SERVICE_DELAY_TIME");
@@ -131,65 +151,79 @@ public class FloatWindowService extends Service{
 		
 	}
 	
+	@Override
+	public void onDestroy(){
+		unregisterReceiver(floatEventReceiver);
+		startService(new Intent(this, FloatWindowService.class));
+	}
+	
 	private static class FloatHandler extends Handler{
 		WeakReference<Service> serviceReference;
+		FloatWindowService service;
+		
 		int floatCircleViewStateX;
 		int floatCircleViewStateY;
 		
+		OnFloatViewEventListener onFloatViewEventListener;
+		
 		public FloatHandler(Service service){
 			serviceReference = new WeakReference<Service>(service);
+			this.service = (FloatWindowService) serviceReference.get();
+			
+			final FloatWindowService service_tmp = this.service;
+			
+			onFloatViewEventListener = new OnFloatViewEventListener(){
+
+				@Override
+				public void onCircleViewTap() {
+					// TODO Auto-generated method stub
+					if(service_tmp.getFloatDetailView() == null){
+						WindowManager.LayoutParams params = (LayoutParams) service_tmp.getFloatCircleView().getLayoutParams();
+						floatCircleViewStateX = params.x;
+						floatCircleViewStateY = params.y;
+						
+						service_tmp.setFloatDetailView(FloatAdsCategory.getInstance(service_tmp.getApplicationContext()).createFloatDetailWindow(service_tmp.getApplicationContext(), params.x, params.y));
+						service_tmp.getFloatDetailView().setOnFloatViewEventListener(this);
+						
+						service_tmp.getWindowManager().removeView(service_tmp.getFloatCircleView());
+						service_tmp.setFloatCircleView(null);
+						
+					}
+				}
+
+				@Override
+				public void onCircleViewCloseTap() {
+					// TODO Auto-generated method stub
+					
+				}
+
+				@Override
+				public void onCircleViewLongTap() {
+					// TODO Auto-generated method stub
+					
+				}
+
+				@Override
+				public void onDetailViewClose() {
+					if(service_tmp.getFloatCircleView() == null){
+						service_tmp.setFloatCircleView(FloatAdsCategory.getInstance(service_tmp.getApplicationContext()).createFloatCircleWindow(service_tmp.getApplicationContext(), floatCircleViewStateX, floatCircleViewStateY));
+						service_tmp.getFloatCircleView().setOnFloatViewEventListener(this);
+						service_tmp.getWindowManager().removeView(service_tmp.getFloatDetailView());
+						service_tmp.setFloatDetailView(null);
+					}
+				}
+				
+			};
 		}
 		
 		@Override
 		public void handleMessage(Message msg){
-			final FloatWindowService service = (FloatWindowService) serviceReference.get();
 			switch(msg.what){
 			case HANDLE_CREATE_FLOAT_VIEW:
 				service.setFloatCircleView(FloatAdsCategory.getInstance(service.getApplicationContext()).createFloatCircleWindow(service.getApplicationContext(), floatCircleViewStateX, floatCircleViewStateY));
-				service.getFloatCircleView().setOnFloatViewEventListener(new OnFloatViewEventListener(){
-
-					@Override
-					public void onCircleViewTap() {
-						// TODO Auto-generated method stub
-						if(service.getFloatDetailView() == null){
-							WindowManager.LayoutParams params = (LayoutParams) service.getFloatCircleView().getLayoutParams();
-							floatCircleViewStateX = params.x;
-							floatCircleViewStateY = params.y;
-							
-							service.setFloatDetailView(FloatAdsCategory.getInstance(service.getApplicationContext()).createFloatDetailWindow(service.getApplicationContext(), params.x, params.y));
-							service.getFloatDetailView().setOnFloatViewEventListener(this);
-							
-							service.getWindowManager().removeView(service.getFloatCircleView());
-							service.setFloatCircleView(null);
-							
-						}
-					}
-
-					@Override
-					public void onCircleViewCloseTap() {
-						// TODO Auto-generated method stub
-						
-					}
-
-					@Override
-					public void onCircleViewLongTap() {
-						// TODO Auto-generated method stub
-						
-					}
-
-					@Override
-					public void onDetailViewClose() {
-						if(service.getFloatCircleView() == null){
-							service.setFloatCircleView(FloatAdsCategory.getInstance(service.getApplicationContext()).createFloatCircleWindow(service.getApplicationContext(), floatCircleViewStateX, floatCircleViewStateY));
-							service.getFloatCircleView().setOnFloatViewEventListener(this);
-							service.getWindowManager().removeView(service.getFloatDetailView());
-							service.setFloatDetailView(null);
-						}
-					}
-					
-				});
+				service.getFloatCircleView().setOnFloatViewEventListener(onFloatViewEventListener);
 				break;
-			case HANDLE_DESTROY_FLOAT_VIEW:
+			case HANDLE_DESTROY_FLOAT_CIRCLE_VIEW:
 				if(service.getFloatCircleView() != null){
 					WindowManager.LayoutParams params = (LayoutParams) service.getFloatCircleView().getLayoutParams();
 					floatCircleViewStateX = params.x;
@@ -208,7 +242,7 @@ public class FloatWindowService extends Service{
 
 							@Override
 							public void onAdsGot(List<AppInfo> appInfos, List<BannerInfo> bannerInfos) {
-								service.getFloatDetailView().setAppInfos(appInfos);
+								if(appInfos != null && appInfos.size() > 0) service.getFloatDetailView().setAppInfos(appInfos);
 							}
 							
 						});
@@ -218,6 +252,30 @@ public class FloatWindowService extends Service{
 			case HANDLE_REFRESH_MEMORY_PERCENTAGE:
 				if(service.getFloatCircleView() != null){
 					service.getFloatCircleView().setPercentage(service.getMemoryPercentage());
+				}
+				break;
+			case HANDLE_HIDE_FLOAT_DETAIL_VIEW:
+				if(service.getFloatDetailView() != null){
+					Parcelable state = service.getFloatDetailView().getViewPager().getAdapter().saveState();
+					if(state instanceof Bundle){
+						((Bundle) state).putInt("currentItem", service.getFloatDetailView().getViewPager().getCurrentItem());
+					}
+					
+					service.setFloatDetailSaveState(state);
+					
+					service.getWindowManager().removeView(service.getFloatDetailView());
+					service.setFloatDetailView(null);
+					service.setIsInDetailMode(true);
+				}
+				break;
+			case HANDLE_RESTORE_FLOAT_DETAIL_VIEW:
+				if(service.getFloatDetailView() == null){
+					service.setFloatDetailView(FloatAdsCategory.getInstance(service).createFloatDetailWindow(service));
+					service.getFloatDetailView().setOnFloatViewEventListener(onFloatViewEventListener);
+					service.setIsInDetailMode(false);
+					
+					//service.getFloatDetailView().getViewPager().getAdapter().restoreState(service.getFloatDetailSaveState(), null);
+					service.getFloatDetailView().getViewPager().setCurrentItem(((Bundle) service.getFloatDetailSaveState()).getInt("currentItem"));
 				}
 				break;
 			}
@@ -289,4 +347,27 @@ public class FloatWindowService extends Service{
 		return windowManager;
 	}
 	
+	public void setFloatDetailSaveState(Parcelable state){
+		floatDetailSavedState = state;
+	}
+	
+	public Parcelable getFloatDetailSaveState(){
+		return floatDetailSavedState;
+	}
+	
+	public void setIsInDetailMode(boolean isInDetailMode){
+		this.isInDetailMode = isInDetailMode;
+	}
+	
+	public class FloatEventReceiver extends BroadcastReceiver{
+
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			if(intent.getAction().equals(ACTION_HIDE_FLOAT_DETAIL)){
+				Message msg = handler.obtainMessage(FloatWindowService.HANDLE_HIDE_FLOAT_DETAIL_VIEW);
+				msg.sendToTarget();
+			}
+		}
+		
+	}
 }

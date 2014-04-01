@@ -7,6 +7,7 @@ public class PzExecutorFactory {
 	
 	private static ExecutorService singleThreadPool;
 	private static ExecutorService imageLoadThreadPool;
+	private static ExecutorService apkLoadThreadPool;
 	
 	public static ExecutorService getSingleThreadPool(){
 		if(singleThreadPool == null){
@@ -23,6 +24,14 @@ public class PzExecutorFactory {
 		}
 		
 		return imageLoadThreadPool;
+	}
+	
+	public static ExecutorService getApkLoadThreadPool(){
+		if(apkLoadThreadPool == null){
+			apkLoadThreadPool = Executors.newSingleThreadExecutor();
+		}
+		
+		return apkLoadThreadPool;
 	}
 	
 }

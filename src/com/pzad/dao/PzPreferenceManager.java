@@ -50,7 +50,7 @@ public class PzPreferenceManager {
 	
 	public String getDeviceId(){
 		if(sharedPreferences.getString(DEVICE_ID, null) == null){
-			
+			setDeviceId(SystemMeasurementUtil.getDeviceId(context));
 		}
 		return sharedPreferences.getString(DEVICE_ID, null);
 	}
