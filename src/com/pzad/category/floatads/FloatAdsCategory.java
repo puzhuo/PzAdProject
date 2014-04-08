@@ -6,16 +6,12 @@ import android.graphics.PixelFormat;
 import android.view.Gravity;
 import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
-import android.view.animation.Animation;
-import android.view.animation.ScaleAnimation;
 
 import com.pzad.category.AdsArgs;
 import com.pzad.category.BaseAdsCategory;
-import com.pzad.dao.PzPreferenceManager;
 import com.pzad.entities.Statistic;
 import com.pzad.services.FloatWindowService;
 import com.pzad.utils.CalculationUtil;
-import com.pzad.utils.PLog;
 import com.pzad.utils.SystemMeasurementUtil;
 import com.pzad.widget.FloatDetailView;
 
@@ -115,6 +111,8 @@ public class FloatAdsCategory extends BaseAdsCategory{
 		}else{
 			floatDetailView = new FloatDetailView(context, false);
 		}
+		
+		
 		
 		floatDetailView.setParams(floatDetailLayoutParams);
 		windowManager.addView(floatDetailView, floatDetailLayoutParams);

@@ -1,10 +1,10 @@
-package com.pzad.utils.image;
+package com.pzad.net.image;
 
 import java.io.File;
 
-import com.pzad.utils.PLog;
-
 import android.content.Context;
+
+import com.pzad.utils.FileUtil;
 
 public class FileCache {
 	public static final long MAX_SIZE = 1024 * 1024 * 100;
@@ -12,17 +12,8 @@ public class FileCache {
 	private File cacheDir;
 	
 	public FileCache(Context context){
-		if(android.os.Environment.getExternalStorageState().equals(android.os.Environment.MEDIA_MOUNTED)){
-			String[] dirNameArray = context.getPackageName().split("\\.");
-			String dirName = "";
-			for(String item : dirNameArray){
-				dirName += item + "_";
-			}
-			
-			cacheDir = new File(android.os.Environment.getExternalStorageDirectory(), dirName + "cache/data/cahce");
-		}else{
-			cacheDir = context.getCacheDir();
-		}
+		
+		cacheDir = new File(FileUtil.getExternalPath(context) + "/image");
 		
 		if(!cacheDir.exists()) cacheDir.mkdirs();
 	}

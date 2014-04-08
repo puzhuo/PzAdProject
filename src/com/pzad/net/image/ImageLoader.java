@@ -1,4 +1,4 @@
-package com.pzad.utils.image;
+package com.pzad.net.image;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -7,7 +7,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.HttpURLConnection;
 import java.net.URL;
 import java.net.URLConnection;
 
@@ -38,10 +37,12 @@ public class ImageLoader {
 				    connection.connect();
 				
 				    InputStream is = connection.getInputStream();
-				    result = BitmapFactory.decodeStream(is);
+				    BitmapFactory.Options options = new BitmapFactory.Options();
+				    options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+				    result = BitmapFactory.decodeStream(is, null, options);
 				    memoryCache.put(url, result);
 				    OutputStream os = new FileOutputStream(bitmapFile);
-				    result.compress(Bitmap.CompressFormat.JPEG, 100, os);
+				    result.compress(Bitmap.CompressFormat.PNG, 100, os);
 				    //StreamUtil.copyStream(is, os, connection.getContentLength());
 				    os.close();
 				    //result = decodeBitmapFromFile(bitmapFile);
@@ -70,7 +71,9 @@ public class ImageLoader {
 			 */
 			
 			FileInputStream fis = new FileInputStream(file);
-			bitmap = BitmapFactory.decodeStream(fis);
+			BitmapFactory.Options options = new BitmapFactory.Options();
+			options.inPreferredConfig = Bitmap.Config.ARGB_8888;
+			bitmap = BitmapFactory.decodeStream(fis, null, options);
 			fis.close();
 		}catch(FileNotFoundException e){
 			e.printStackTrace();

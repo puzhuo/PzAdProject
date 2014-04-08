@@ -4,16 +4,18 @@ import java.util.List;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
 import android.view.Gravity;
 import android.widget.FrameLayout;
 
+import com.pzad.broadcast.StatisticReceiver;
 import com.pzad.category.AdsArgs;
 import com.pzad.category.BaseAdsCategory;
 import com.pzad.entities.AppInfo;
 import com.pzad.entities.BannerInfo;
 import com.pzad.entities.Statistic;
-import com.pzad.utils.AdsInfoProvider;
-import com.pzad.utils.AdsInfoProvider.OnAdsGotListener;
+import com.pzad.net.AdsInfoProvider;
+import com.pzad.net.AdsInfoProvider.OnAdsGotListener;
 import com.pzad.utils.PLog;
 
 public class BannerAdsCategory extends BaseAdsCategory {
@@ -31,7 +33,20 @@ public class BannerAdsCategory extends BaseAdsCategory {
 			Activity currentActivity = (Activity) getContext();
 			
 			rootLayout = (FrameLayout) currentActivity.findViewById(android.R.id.content);
-			iv = new BannerImageView(currentActivity);
+			iv = new BannerImageView(currentActivity){
+				@Override
+				public void onFinishImageLoad(){
+					Statistic s = new Statistic();
+					s.setName(getBannerInfo().getName(), Statistic.TYPE_BANNER);
+					s.setExhibitionCount(1);
+					
+					Intent bannerIntent = new Intent();
+					bannerIntent.setAction(StatisticReceiver.ACTION_RECEIVE_STATISTIC);
+					bannerIntent.putExtra(StatisticReceiver.NAME, s);
+					
+					getContext().sendBroadcast(bannerIntent);
+				}
+			};
 			if(!AdsInfoProvider.getInstance(getContext()).isAdsDataAvailable()){
 				AdsInfoProvider.getInstance(getContext()).registerAdsGotListener(new OnAdsGotListener(){
 

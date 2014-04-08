@@ -1,4 +1,4 @@
-package com.pzad.utils;
+package com.pzad.net;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
@@ -20,6 +20,8 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.protocol.HTTP;
 import org.apache.http.util.EntityUtils;
+
+import com.pzad.utils.PLog;
 
 public class PzHttpClient {
 	

@@ -8,7 +8,9 @@ import android.net.Uri;
 import android.util.AttributeSet;
 import android.view.View;
 
+import com.pzad.broadcast.StatisticReceiver;
 import com.pzad.entities.BannerInfo;
+import com.pzad.entities.Statistic;
 import com.pzad.widget.UrlImageView;
 
 public class BannerImageView extends UrlImageView{
@@ -34,19 +36,32 @@ public class BannerImageView extends UrlImageView{
 		this.setScaleType(ScaleType.MATRIX);
 	}
 	
-	public void setBannerInfo(BannerInfo data){
+	public void setBannerInfo(final BannerInfo data){
 		this.data = data;
 		setImageUrl(data.getPicture());
 		setClickable(true);
 		setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
+				Intent bannerIntent = new Intent();
+				bannerIntent.setAction(StatisticReceiver.ACTION_RECEIVE_STATISTIC);
+				Statistic bannerS = new Statistic();
+				bannerS.setName(data.getName(), Statistic.TYPE_BANNER);
+				bannerS.setBrowseDetailCount(1);
+				bannerIntent.putExtra(StatisticReceiver.NAME, bannerS);
+				
+				getContext().sendBroadcast(bannerIntent);
+				
 				Intent intent = new Intent(Intent.ACTION_VIEW);
 				intent.setAction(Intent.ACTION_VIEW);
 				intent.setData(Uri.parse(BannerImageView.this.data.getLink()));
 				BannerImageView.this.getContext().startActivity(intent);
 			}
 		});
+	}
+	
+	public BannerInfo getBannerInfo(){
+		return data;
 	}
 	
 	@Override

@@ -10,14 +10,14 @@ import android.widget.BaseAdapter;
 import com.pzad.entities.AppInfo;
 import com.pzad.net.ApkDownloadProvider;
 import com.pzad.net.api.Downloadable;
-import com.pzad.widget.AppBlock;
+import com.pzad.widget.AppDetailBlock;
 
-public class DetailGridViewAdapter extends BaseAdapter {
+public class DetailListViewAdapter extends BaseAdapter {
 	
 	private Context context;
 	private List<AppInfo> datas;
 	
-	public DetailGridViewAdapter(Context context, List<AppInfo> datas){
+	public DetailListViewAdapter(Context context, List<AppInfo> datas){
 		this.context = context;
 		this.datas = datas;
 	}
@@ -40,13 +40,13 @@ public class DetailGridViewAdapter extends BaseAdapter {
 	@Override
 	public View getView(int position, View convertView, ViewGroup parent) {
 		if(convertView == null){
-			convertView = new AppBlock(context);
+			convertView = new AppDetailBlock(context);
 			if(convertView instanceof Downloadable){
-				ApkDownloadProvider.getInstance(context).registerDownloadable(((Downloadable) convertView));
+				ApkDownloadProvider.getInstance(context).registerDownloadable((Downloadable) convertView);
 			}
 		}
 		
-		AppBlock block = (AppBlock) convertView;
+		AppDetailBlock block = (AppDetailBlock) convertView;
 		block.setAppInfo(getItem(position));
 		
 		block.onDownloadComplete(null, false, null);

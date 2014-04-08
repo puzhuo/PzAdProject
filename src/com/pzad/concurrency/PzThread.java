@@ -1,6 +1,7 @@
 package com.pzad.concurrency;
 
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 
 import android.os.Handler;
 import android.os.Message;
@@ -25,17 +26,30 @@ public abstract class PzThread<Result> {
 	}
 	
 	public void executeOnExecutor(Executor exec){
+		onPreExecute();
+		if(exec instanceof ExecutorService){
+		}
 		exec.execute(currentThread);
 	}
 	
 	private void postResult(Result result){
-		Message message = handler.obtainMessage(POST_RESULT, new PzThreadResult<Result>(this, result));
+		Message message = handler.obtainMessage(POST_RESULT, new PzThreadResult<Result>(this, result, 0F));
 		message.sendToTarget();
 	}
 	
-	public abstract Result run();
+	protected void sendProgress(float progress){
+		Message message = handler.obtainMessage(POST_PROGRESS, new PzThreadResult<Result>(this, null, progress));
+		message.sendToTarget();
+	}
 	
-	public abstract void onFinish(Result result);
+	protected abstract Result run();
+	
+	protected void onPreExecute(){};
+	protected void onAborted(){};
+	
+	protected abstract void onFinish(Result result);
+	
+	protected void onProgress(float progress){};
 	
 	private static class InnerHandler extends Handler{
 		@Override
@@ -46,6 +60,7 @@ public abstract class PzThread<Result> {
 				result.task.onFinish(result.data);
 				break;
 			case POST_PROGRESS:
+				result.task.onProgress(result.progress);
 				break;
 			}
 		}
@@ -54,10 +69,16 @@ public abstract class PzThread<Result> {
 	private static class PzThreadResult<Result>{
 		final PzThread task;
 		final Result data;
+		final float progress;
 		
-		public PzThreadResult(PzThread task, Result data){
+		public PzThreadResult(PzThread task, Result data, final float progress){
 			this.task = task;
 			this.data = data;
+			this.progress = progress;
 		}
+	}
+	
+	public boolean isRunning(){
+		return currentThread != null && currentThread.isAlive();
 	}
 }

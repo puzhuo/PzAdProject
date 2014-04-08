@@ -1,4 +1,4 @@
-package com.pzad.utils;
+package com.pzad.net;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -14,6 +14,7 @@ import com.pzad.concurrency.PzThread;
 import com.pzad.dao.PzPreferenceManager;
 import com.pzad.entities.AppInfo;
 import com.pzad.entities.BannerInfo;
+import com.pzad.utils.SystemMeasurementUtil;
 
 public class AdsInfoProvider {
 	
@@ -51,7 +52,7 @@ public class AdsInfoProvider {
 	private List<OnAdsGotListener> onAdsGotListeners;
 	
 	private AdsInfoProvider(Context context){
-		this.context = context;
+		this.context = context.getApplicationContext();
 		appInfos = new ArrayList<AppInfo>();
 		bannerInfos = new ArrayList<BannerInfo>();
 		

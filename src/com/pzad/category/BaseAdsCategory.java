@@ -11,6 +11,7 @@ public abstract class BaseAdsCategory implements AdsCycleAPI{
 	public static final int CATEGORY_POPUP_ON_RUN = 0x4;
 	public static final int CATEGORY_POPUP_ON_EXIT = 0x8;
 	public static final int CATEGORY_INTERCEPT = 0x10;
+	public static final int CATEGORY_PUSH = 0x20;
 	
 	private Context context;
 	

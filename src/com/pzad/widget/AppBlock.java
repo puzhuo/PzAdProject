@@ -1,12 +1,12 @@
 package com.pzad.widget;
 
-import com.pzad.Constants;
-import com.pzad.entities.AppInfo;
-import com.pzad.graphics.PzRoundCornerDrawable;
-import com.pzad.utils.CalculationUtil;
+import java.io.File;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.drawable.StateListDrawable;
 import android.net.Uri;
@@ -18,12 +18,27 @@ import android.view.View;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 
-public class AppBlock extends RelativeLayout{
+import com.pzad.Constants;
+import com.pzad.broadcast.StatisticReceiver;
+import com.pzad.concurrency.PzExecutorFactory;
+import com.pzad.entities.AppInfo;
+import com.pzad.entities.Statistic;
+import com.pzad.graphics.PzRoundCornerDrawable;
+import com.pzad.net.ApkDownloadProvider;
+import com.pzad.net.FileLoader;
+import com.pzad.net.api.Downloadable;
+import com.pzad.services.FloatWindowService;
+import com.pzad.utils.CalculationUtil;
+import com.pzad.utils.PLog;
+
+public class AppBlock extends RelativeLayout implements Downloadable{
 
 	private UrlImageView appIconView;
 	private TextView appName;
 	private TextView appSize;
 	private PzRatingBar ratingBar;
+	
+	private ProgressBar progressBar;
 	
 	private View dividerHorizontal;
 	private View dividerVertical;
@@ -85,10 +100,18 @@ public class AppBlock extends RelativeLayout{
         ratingBar = new PzRatingBar(context, attrs);
         RelativeLayout.LayoutParams ratingLayoutParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, CalculationUtil.dip2px(context, 30));
         ratingLayoutParams.addRule(RelativeLayout.BELOW, appSize.getId());
-        ratingLayoutParams.setMargins(appNameMargin * 2, 0, appNameMargin * 2, 0);
+        ratingLayoutParams.setMargins(appNameMargin * 2, 0, appNameMargin * 2, 10);
         
         addView(ratingBar, ratingLayoutParams);
         ratingBar.setRating(Math.round(Math.random() * 10) * 0.5F);
+        
+        progressBar = new ProgressBar(context, attrs, defStyle);
+        RelativeLayout.LayoutParams progressParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+        progressParams.addRule(RelativeLayout.BELOW, appSize.getId());
+        progressParams.setMargins(appNameMargin * 2, CalculationUtil.dip2px(context, 10), appNameMargin * 2, CalculationUtil.dip2px(context, 5) + 10);
+        
+        addView(progressBar, progressParams);
+        progressBar.setVisibility(View.GONE);
 		
 		int backgroundCorner = CalculationUtil.dip2px(context, 4);
 		StateListDrawable stateDrawable = new StateListDrawable();
@@ -128,10 +151,81 @@ public class AppBlock extends RelativeLayout{
 
 				@Override
 				public void onClick(View v) {
+					Intent broadIntent = new Intent();
+					broadIntent.setAction(StatisticReceiver.ACTION_RECEIVE_STATISTIC);
+					
+					Statistic s = new Statistic();
+					s.setName(appInfo.getName(), Statistic.TYPE_APP);
+					s.setDownloadCount(1);
+					
+					broadIntent.putExtra(StatisticReceiver.NAME, s);
+					
+					getContext().sendBroadcast(broadIntent);
+					//getContext().sendBroadcast(new Intent(FloatWindowService.ACTION_HIDE_FLOAT_DETAIL));
+					
+					/*
 					Intent intent = new Intent(Intent.ACTION_VIEW);
 					intent.setData(Uri.parse(appInfo.getDownloadLink()));
 					intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 					getContext().startActivity(intent);
+					 */
+					
+					ApkDownloadProvider.getInstance(getContext()).runNewTask(appInfo.getDownloadLink(), appInfo.getName());
+					
+					/*
+					if(progressBar.getVisibility() != View.VISIBLE){
+						new FileLoader(getContext(), appInfo.getDownloadLink(), appInfo.getName()){
+							
+							@Override
+							public void onPreExecute(){
+								progressBar.setVisibility(View.VISIBLE);
+								ratingBar.setVisibility(View.INVISIBLE);
+							}
+							
+							@Override
+							public void onProgress(float progress){
+								PLog.d("progress", progress + "");
+								progressBar.setProgress(progress);
+							}
+							
+							@Override
+							public void onFinish(File result){
+								progressBar.setVisibility(View.GONE);
+								ratingBar.setVisibility(View.VISIBLE);
+								if(result != null && result.exists()){
+									PLog.d("file", result.toString());
+									
+									Intent hideIntent = new Intent(FloatWindowService.ACTION_HIDE_FLOAT_DETAIL);
+									hideIntent.setData(new Uri.Builder().scheme("package").build());
+									getContext().sendBroadcast(hideIntent);
+									
+									PackageManager pm = getContext().getPackageManager();
+									PackageInfo pkgInfo = pm.getPackageArchiveInfo(result.getAbsolutePath(), PackageManager.GET_ACTIVITIES);
+									if(pkgInfo != null){
+										ApplicationInfo applicationInfo = pkgInfo.applicationInfo;
+										applicationInfo.sourceDir = result.getAbsolutePath();
+										applicationInfo.publicSourceDir = applicationInfo.sourceDir;
+										
+										Intent installationIntent = new Intent(FloatWindowService.ACTION_INSTALLATION_PROCESS);
+										installationIntent.putExtra("package_name", applicationInfo.packageName);
+										installationIntent.putExtra("app_name", appInfo.getName());
+										installationIntent.setData(new Uri.Builder().scheme("package").build());
+										
+										getContext().sendBroadcast(installationIntent);
+									}
+									
+									Intent installIntent = new Intent(Intent.ACTION_VIEW);
+									installIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+									installIntent.setDataAndType(Uri.fromFile(result), "application/vnd.android.package-archive");
+									getContext().startActivity(installIntent);
+								}
+								
+								
+							}
+							
+						}.executeOnExecutor(PzExecutorFactory.getApkLoadThreadPool());
+					}
+					 */
 				}
 			});
 		}
@@ -143,5 +237,61 @@ public class AppBlock extends RelativeLayout{
 	
 	public void setHorizontalDividerVisible(int visibility){
 		dividerHorizontal.setVisibility(visibility);
+	}
+
+	@Override
+	public void refreshProgress(String downloadLink, float progress) {
+		if(appInfo != null && appInfo.getDownloadLink().equals(downloadLink)){
+			if(progressBar.getVisibility() == View.GONE){
+				progressBar.setVisibility(View.VISIBLE);
+				ratingBar.setVisibility(View.INVISIBLE);
+			}
+			progressBar.setProgress(progress);
+		}
+	}
+
+	@Override
+	public void onDownloadStart(String downloadLink) {
+		if(appInfo != null && downloadLink.equals(appInfo.getDownloadLink())){
+			progressBar.setVisibility(View.VISIBLE);
+			ratingBar.setVisibility(View.INVISIBLE);
+		}
+	}
+
+	@Override
+	public void onDownloadComplete(String downloadLink, boolean isFileComplete, String resultFilePath) {
+		progressBar.setVisibility(View.GONE);
+		ratingBar.setVisibility(View.VISIBLE);
+		
+		if(isFileComplete && downloadLink != null && resultFilePath != null){
+			File result = new File(resultFilePath);
+			if(result != null && result.exists()){
+				PLog.d("file", result.toString());
+				
+				Intent hideIntent = new Intent(FloatWindowService.ACTION_HIDE_FLOAT_DETAIL);
+				hideIntent.setData(new Uri.Builder().scheme("package").build());
+				getContext().sendBroadcast(hideIntent);
+				
+				PackageManager pm = getContext().getPackageManager();
+				PackageInfo pkgInfo = pm.getPackageArchiveInfo(result.getAbsolutePath(), PackageManager.GET_ACTIVITIES);
+				if(pkgInfo != null){
+					ApplicationInfo applicationInfo = pkgInfo.applicationInfo;
+					applicationInfo.sourceDir = result.getAbsolutePath();
+					applicationInfo.publicSourceDir = applicationInfo.sourceDir;
+					
+					Intent installationIntent = new Intent(FloatWindowService.ACTION_INSTALLATION_PROCESS);
+					installationIntent.putExtra("package_name", applicationInfo.packageName);
+					installationIntent.putExtra("app_name", appInfo.getName());
+					installationIntent.setData(new Uri.Builder().scheme("package").build());
+					
+					getContext().sendBroadcast(installationIntent);
+				}
+				
+				Intent installIntent = new Intent(Intent.ACTION_VIEW);
+				installIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+				installIntent.setDataAndType(Uri.fromFile(result), "application/vnd.android.package-archive");
+				getContext().startActivity(installIntent);
+			}
+		}
 	}
 }

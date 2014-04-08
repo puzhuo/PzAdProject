@@ -4,16 +4,21 @@ import java.lang.ref.WeakReference;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import com.pzad.category.tuiads.TuiAdsCategory;
+import com.pzad.services.FloatWindowService.OnFloatViewEventListener;
 import com.pzad.utils.PLog;
+import com.pzad.widget.FloatDetailView;
 
 import android.app.ActivityManager;
 import android.app.ActivityManager.RunningTaskInfo;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.os.IBinder;
 import android.os.Message;
 import android.text.TextUtils;
+import android.view.WindowManager;
 import android.widget.Toast;
 
 public class TuiService extends Service {
@@ -21,6 +26,8 @@ public class TuiService extends Service {
 	private boolean mOnTop;
 	private ActivityManager mActivityManager;
 	private String mPackageName;
+	
+	private FloatDetailView floatDetailView;
 
 	private static final int CHECK_ID = 1087;
 	private static final long CHECK_TIME = 5000;
@@ -34,7 +41,6 @@ public class TuiService extends Service {
 
 		@Override
 		public void run() {
-			PLog.d("millis", System.currentTimeMillis() + "");
 			if(!checkOnTop() && mOnTop){
 				
 				Message msg = mHandler.obtainMessage(CHECK_ID);
@@ -80,9 +86,43 @@ public class TuiService extends Service {
 		}
 
 		public void handleMessage(android.os.Message msg) {
+			final TuiService service = (TuiService) serviceReference.get();
 			switch (msg.what) {
 			case CHECK_ID:
-				Toast.makeText(serviceReference.get(), "1111111111", Toast.LENGTH_SHORT).show();
+				if(service.getFloatDetailView() == null){
+					service.setFloatDetailView(new TuiAdsCategory(service).createFloatDetailWindow(service));
+					service.getFloatDetailView().setOnFloatViewEventListener(new OnFloatViewEventListener(){
+
+						@Override
+						public void onCircleViewTap() {
+							// TODO Auto-generated method stub
+							
+						}
+
+						@Override
+						public void onCircleViewCloseTap() {
+							// TODO Auto-generated method stub
+							
+						}
+
+						@Override
+						public void onCircleViewLongTap() {
+							// TODO Auto-generated method stub
+							
+						}
+
+						@Override
+						public void onDetailViewClose() {
+							if(service.getFloatDetailView() != null){
+								WindowManager windowManager = (WindowManager) service.getSystemService(Context.WINDOW_SERVICE);
+								windowManager.removeView(service.getFloatDetailView());
+								service.setFloatDetailView(null);
+								service.stopSelf();
+							}
+						}
+						
+					});
+				}
 				break;
 			}
 		};
@@ -93,11 +133,29 @@ public class TuiService extends Service {
 			mActivityManager = (ActivityManager) getSystemService(android.content.Context.ACTIVITY_SERVICE);
 		}
 		RunningTaskInfo runningTaskInfo = mActivityManager.getRunningTasks(1).get(0);
-		PLog.d(mPackageName, runningTaskInfo.topActivity.getPackageName());
 		if (TextUtils.equals(mPackageName, runningTaskInfo.topActivity.getPackageName())) {
 			mOnTop = true;
 			return true;
 		}
 		return false;
+	}
+	
+	public void setFloatDetailView(FloatDetailView floatDetailView){
+		this.floatDetailView = floatDetailView;
+	}
+	
+	public FloatDetailView getFloatDetailView(){
+		return floatDetailView;
+	}
+	
+	@Override
+	public void onDestroy(){
+		
+		if(floatDetailView != null){
+			WindowManager windowManager = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+			windowManager.removeView(floatDetailView);
+			floatDetailView = null;
+		}
+		super.onDestroy();
 	}
 }

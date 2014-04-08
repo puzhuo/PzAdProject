@@ -5,6 +5,7 @@ import java.util.List;
 
 import com.pzad.Constants;
 import com.pzad.adapter.DetailGridViewAdapter;
+import com.pzad.adapter.ViewGroupPagerAdapter;
 import com.pzad.entities.AppInfo;
 import com.pzad.graphics.PzRoundCornerDrawable;
 import com.pzad.services.FloatWindowService.OnFloatViewEventListener;
@@ -12,6 +13,7 @@ import com.pzad.utils.CalculationUtil;
 
 import android.content.Context;
 import android.content.res.ColorStateList;
+import android.support.v4.view.ViewPager;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.WindowManager;
@@ -30,11 +32,14 @@ public class FloatDetailView extends RelativeLayout{
 	private int initX;
 	private int initY;
 	
-	private PzCloseButton closeButton;
-	private GridView gridView;
+	private int currentPosition = 0;
 	
-	private DetailGridViewAdapter gridViewAdapter;
-	private List<AppInfo> gridViewAdapterDatas;
+	private PzCloseButton closeButton;
+	
+	private ViewPager viewPager;
+	private ViewGroupPagerAdapter viewPagerAdapter;
+	
+	private List<AppInfo> appDatas;
 	
 	private WindowManager.LayoutParams layoutParams;
 	
@@ -107,7 +112,36 @@ public class FloatDetailView extends RelativeLayout{
 		LinearLayout buttonLayout = new LinearLayout(context, attrs);
 		buttonLayout.setId(1024 * 65536);
 		RelativeLayout.LayoutParams buttonLayoutParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
+		buttonLayoutParams.setMargins(10, 0, 10, 0);
 		buttonLayoutParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
+		
+		LinearLayout.LayoutParams switchButtonParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.FILL_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+		switchButtonParams.weight = 1.0F;
+		switchButtonParams.setMargins(0, 0, 0, 10);
+		
+		LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(1, LinearLayout.LayoutParams.FILL_PARENT);
+		dividerParams.setMargins(0, CalculationUtil.dip2px(context, 10), 0, CalculationUtil.dip2px(context, 10) + 10);
+		
+		if(!simpleForm){
+			final int newsPosition = currentPosition++;
+			ColorStateList newsButtonStateList = new ColorStateList(new int[][]{new int[]{android.R.attr.state_pressed}, new int[]{-android.R.attr.state_pressed}},
+					                                                new int[]{0xFF000000, Constants.GLOBAL_HIGHLIGHT_COLOR});
+			
+			Button newsButton = new Button(context, attrs);
+			newsButton.setTextColor(newsButtonStateList);
+			newsButton.setBackgroundColor(0);
+			newsButton.setText("热点");
+			newsButton.setOnClickListener(new OnClickListener(){
+				@Override
+				public void onClick(View v){viewPager.setCurrentItem(newsPosition, true);}
+			});
+			
+			View divider_1 = new View(context, attrs);
+			divider_1.setBackgroundColor(Constants.GLOBAL_SHADOW_COLOR);
+			
+			buttonLayout.addView(newsButton, switchButtonParams);
+			buttonLayout.addView(divider_1, dividerParams);
+		}
 		
 		ColorStateList recommendButtonStateList = new ColorStateList(new int[][]{new int[]{android.R.attr.state_pressed}, new int[]{-android.R.attr.state_pressed}},
 				                                                     new int[]{0xFF000000, Constants.GLOBAL_HIGHLIGHT_COLOR});
@@ -116,6 +150,11 @@ public class FloatDetailView extends RelativeLayout{
 		recommendButton.setTextColor(recommendButtonStateList);
 		recommendButton.setBackgroundColor(0);
 		recommendButton.setText("推荐");
+		final int recommendPosition = currentPosition++;
+		recommendButton.setOnClickListener(new OnClickListener(){
+			@Override
+			public void onClick(View v){viewPager.setCurrentItem(recommendPosition, true);}
+		});
 		
 		ColorStateList gameButtonStateList = new ColorStateList(new int[][]{new int[]{android.R.attr.state_pressed}, new int[]{-android.R.attr.state_pressed}},
                                                                      new int[]{0xFF000000, Constants.GLOBAL_HIGHLIGHT_COLOR});
@@ -124,6 +163,11 @@ public class FloatDetailView extends RelativeLayout{
 		gameButton.setTextColor(gameButtonStateList);
 		gameButton.setBackgroundColor(0);
 		gameButton.setText("游戏");
+		final int gamePosition = currentPosition++;
+		gameButton.setOnClickListener(new OnClickListener(){
+			@Override
+			public void onClick(View v){viewPager.setCurrentItem(gamePosition, true);}
+		});
 		
 		ColorStateList appButtonStateList = new ColorStateList(new int[][]{new int[]{android.R.attr.state_pressed}, new int[]{-android.R.attr.state_pressed}},
 				                                               new int[]{0xFF000000, Constants.GLOBAL_HIGHLIGHT_COLOR});
@@ -132,35 +176,17 @@ public class FloatDetailView extends RelativeLayout{
 		appButton.setTextColor(appButtonStateList);
 		appButton.setBackgroundColor(0);
 		appButton.setText("应用");
+		final int appPosition = currentPosition++;
+		appButton.setOnClickListener(new OnClickListener(){
+			@Override
+			public void onClick(View v){viewPager.setCurrentItem(appPosition, true);}
+		});
 		
 		View divider0 = new View(context, attrs);
 		divider0.setBackgroundColor(Constants.GLOBAL_SHADOW_COLOR);
 		
 		View divider1 = new View(context, attrs);
 		divider1.setBackgroundColor(Constants.GLOBAL_SHADOW_COLOR);
-		
-		LinearLayout.LayoutParams dividerParams = new LinearLayout.LayoutParams(1, LinearLayout.LayoutParams.FILL_PARENT);
-		dividerParams.setMargins(0, CalculationUtil.dip2px(context, 10), 0, CalculationUtil.dip2px(context, 10) + 10);
-		
-		LinearLayout.LayoutParams switchButtonParams = new LinearLayout.LayoutParams(LinearLayout.LayoutParams.FILL_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT);
-		switchButtonParams.weight = 1.0F;
-		switchButtonParams.setMargins(0, 0, 0, 10);
-		
-		if(!simpleForm){
-			ColorStateList newsButtonStateList = new ColorStateList(new int[][]{new int[]{android.R.attr.state_pressed}, new int[]{-android.R.attr.state_pressed}},
-					                                                new int[]{0xFF000000, Constants.GLOBAL_HIGHLIGHT_COLOR});
-			
-			Button newsButton = new Button(context, attrs);
-			newsButton.setTextColor(newsButtonStateList);
-			newsButton.setBackgroundColor(0);
-			newsButton.setText("热点");
-			
-			View divider_1 = new View(context, attrs);
-			divider_1.setBackgroundColor(Constants.GLOBAL_SHADOW_COLOR);
-			
-			buttonLayout.addView(newsButton, switchButtonParams);
-			buttonLayout.addView(divider_1, dividerParams);
-		}
 		
 		buttonLayout.addView(recommendButton, switchButtonParams);
 		buttonLayout.addView(divider0, dividerParams);
@@ -170,6 +196,28 @@ public class FloatDetailView extends RelativeLayout{
 		
 		addView(buttonLayout, buttonLayoutParams);
 		
+		viewPager = new ViewPager(context, attrs);
+		viewPager.setOffscreenPageLimit(3);
+		RelativeLayout.LayoutParams contentBackgroundParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT);
+		int margin = CalculationUtil.dip2px(context, 10);
+		contentBackgroundParams.setMargins(10, margin * 4, 10, 0);
+		contentBackgroundParams.addRule(RelativeLayout.ABOVE, buttonLayout.getId());
+		
+		addView(viewPager, contentBackgroundParams);
+		viewPager.setBackgroundColor(0xFFDDDDDD);
+		appDatas = new ArrayList<AppInfo>();
+		viewPagerAdapter = new ViewGroupPagerAdapter(context, simpleForm ? ViewGroupPagerAdapter.TYPE_SIMPLE : ViewGroupPagerAdapter.TYPE_ALL, appDatas);
+		viewPager.setAdapter(viewPagerAdapter);
+		
+		PzPagerIndicator indicator = new PzPagerIndicator(context, attrs);
+		RelativeLayout.LayoutParams indicatorParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, CalculationUtil.dip2px(context, 5));
+		indicatorParams.setMargins(10, 0, 10, 0);
+		indicatorParams.addRule(RelativeLayout.ALIGN_TOP, buttonLayout.getId());
+		
+		addView(indicator, indicatorParams);
+		indicator.setViewPager(viewPager);
+		
+		/*
 		gridView = new GridView(context, attrs);
 		int gridViewPadding = CalculationUtil.dip2px(context, 10);
 		RelativeLayout.LayoutParams contentBackgroundParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT);
@@ -191,6 +239,7 @@ public class FloatDetailView extends RelativeLayout{
 		gridViewAdapterDatas = new ArrayList<AppInfo>();
 		gridViewAdapter = new DetailGridViewAdapter(context, gridViewAdapterDatas);
 		gridView.setAdapter(gridViewAdapter);
+		 */
 		
 		closeButton = new PzCloseButton(context, attrs);
 		RelativeLayout.LayoutParams closeButtonParams = new RelativeLayout.LayoutParams(CalculationUtil.dip2px(context, 30), CalculationUtil.dip2px(context, 30));
@@ -221,14 +270,18 @@ public class FloatDetailView extends RelativeLayout{
 	}
 	
 	public void setAppInfos(List<AppInfo> datas){
-		gridViewAdapterDatas.clear();
-		gridViewAdapterDatas.addAll(datas);
+		appDatas.clear();
+		appDatas.addAll(datas);
 		
-		gridViewAdapter.notifyDataSetChanged();
+		viewPagerAdapter.notifyChildDataChanged();
 	}
 	
 	public List<AppInfo> getAppInfos(){
-		return gridViewAdapterDatas;
+		return appDatas;
+	}
+	
+	public ViewPager getViewPager(){
+		return viewPager;
 	}
 	
 	@Override
