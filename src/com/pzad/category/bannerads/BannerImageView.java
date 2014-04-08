@@ -60,6 +60,10 @@ public class BannerImageView extends UrlImageView{
 		});
 	}
 	
+	public BannerInfo getBannerInfo(){
+		return data;
+	}
+	
 	@Override
 	protected void onMeasure(int widthMeasureSpec, int heightMeasureSpec){
 		super.onMeasure(widthMeasureSpec, heightMeasureSpec);

@@ -1,9 +1,16 @@
 package com.pzad.widget;
 
 import java.io.File;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.drawable.StateListDrawable;
 import android.net.Uri;
@@ -18,16 +25,20 @@ import android.widget.TextView;
 import com.pzad.Constants;
 import com.pzad.broadcast.StatisticReceiver;
 import com.pzad.concurrency.PzExecutorFactory;
+import com.pzad.concurrency.PzThread;
 import com.pzad.entities.AppInfo;
 import com.pzad.entities.Statistic;
 import com.pzad.graphics.PzHalfRoundCornerDrawable;
+import com.pzad.net.FileLoader;
+import com.pzad.net.api.Downloadable;
 import com.pzad.services.FloatWindowService;
 import com.pzad.utils.CalculationUtil;
-import com.pzad.utils.FileLoader;
 
-public class AppDetailBlock extends RelativeLayout {
+public class AppDetailBlock extends RelativeLayout implements Downloadable {
 	
 	private UrlImageView icon;
+	
+	private File installFile;
 	
 	private TextView appName;
 	private TextView description;
@@ -37,6 +48,7 @@ public class AppDetailBlock extends RelativeLayout {
 	
 	private RelativeLayout boundLayout;
 	private RelativeLayout downloadButton;
+	private TextView downloadText;
 	
 	private AppInfo appInfo;
 	
@@ -68,7 +80,7 @@ public class AppDetailBlock extends RelativeLayout {
 		
         ColorStateList downloadTextStateList = new ColorStateList(new int[][]{new int[]{android.R.attr.state_pressed}, new int[]{-android.R.attr.state_pressed}}, new int[]{Constants.GLOBAL_HIGHLIGHT_COLOR, 0xFF000000});
 		
-		TextView downloadText = new TextView(context, attrs, defStyle);
+		downloadText = new TextView(context, attrs, defStyle);
 		downloadText.setText("下载");
 		downloadText.setTextColor(downloadTextStateList);
 		downloadText.setGravity(Gravity.CENTER);
@@ -180,6 +192,52 @@ public class AppDetailBlock extends RelativeLayout {
 	}
 	
 	public void setAppInfo(final AppInfo appInfo){
+		
+		new PzThread<Boolean>(){
+			File checkFile = new File(FileLoader.getCacheFilePath(getContext()), appInfo.getName() + ".apk");
+			
+			@Override
+			public void onPreExecute(){
+				if(checkFile.exists()){
+					downloadText.setText("安装");
+					installFile = checkFile;
+				}else{
+					downloadText.setText("下载");
+				}
+			}
+
+			@Override
+			public Boolean run() {
+				try {
+					URL url = new URL(appInfo.getDownloadLink());
+					URLConnection conn = url.openConnection();
+					conn.connect();
+					
+					checkFile = new File(FileLoader.getCacheFilePath(getContext()), appInfo.getName() + ".apk");
+					
+					if(checkFile.exists() && checkFile.length() == conn.getContentLength()){
+						return true;
+					}
+					
+				} catch (MalformedURLException e) {
+					e.printStackTrace();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+				return false;
+			}
+
+			@Override
+			public void onFinish(Boolean result) {
+				if(result){
+					downloadText.setText("安装");
+				}else{
+					downloadText.setText("下载");
+				}
+			}
+			
+		}.executeOnExecutor(PzExecutorFactory.getApkLoadThreadPool());
+		
 		if(appInfo != null){
 			this.appInfo = appInfo;
 			icon.setImageUrl(appInfo.getIcon());
@@ -198,7 +256,9 @@ public class AppDetailBlock extends RelativeLayout {
 					
 					detailStsIntent.putExtra(StatisticReceiver.NAME, detailS);
 					getContext().sendBroadcast(detailStsIntent);
-					getContext().sendBroadcast(new Intent(FloatWindowService.ACTION_HIDE_FLOAT_DETAIL));
+					Intent detailHideIntent = new Intent(FloatWindowService.ACTION_HIDE_FLOAT_DETAIL);
+					detailHideIntent.setData(new Uri.Builder().scheme("package").build());
+					getContext().sendBroadcast(detailHideIntent);
 					
 					Intent detailIntent = new Intent(Intent.ACTION_VIEW);
 					detailIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -216,40 +276,71 @@ public class AppDetailBlock extends RelativeLayout {
 					
 					Statistic downloadS = new Statistic();
 					downloadS.setName(appInfo.getName(), Statistic.TYPE_APP);
-					downloadS.setDownloadCount(1);
+					
+					if(downloadText.getText().equals("下载")){
+						downloadS.setDownloadCount(1);
+						
+						if(progressBar.getVisibility() != View.VISIBLE){
+							new FileLoader(getContext(), appInfo.getDownloadLink(), appInfo.getName()){
+								
+								@Override
+								public void onPreExecute(){
+									ratingBar.setVisibility(View.INVISIBLE);
+									progressBar.setVisibility(View.VISIBLE);
+								}
+								
+								@Override
+								public void onProgress(float progress){
+									progressBar.setProgress(progress);
+								}
+								
+								@Override
+								public void onFinish(File result){
+									ratingBar.setVisibility(View.VISIBLE);
+									progressBar.setVisibility(View.INVISIBLE);
+									if(result != null && result.exists()){
+										downloadText.setText("安装");
+										installFile = result;
+									}
+								}
+								
+							}.executeOnExecutor(PzExecutorFactory.getApkLoadThreadPool());
+						}
+					}else{
+						if(installFile != null && installFile.exists()){
+							
+							PackageManager pm = getContext().getPackageManager();
+							PackageInfo pkgInfo = pm.getPackageArchiveInfo(installFile.getAbsolutePath(), PackageManager.GET_ACTIVITIES);
+							if(pkgInfo != null){
+								ApplicationInfo applicationInfo = pkgInfo.applicationInfo;
+								applicationInfo.sourceDir = installFile.getAbsolutePath();
+								applicationInfo.publicSourceDir = applicationInfo.sourceDir;
+								
+								Intent installationIntent = new Intent(FloatWindowService.ACTION_INSTALLATION_PROCESS);
+								installationIntent.putExtra("package_name", applicationInfo.packageName);
+								installationIntent.putExtra("app_name", appInfo.getName());
+								installationIntent.setData(new Uri.Builder().scheme("package").build());
+								
+								getContext().sendBroadcast(installationIntent);
+							}
+							
+							Intent installIntent = new Intent(Intent.ACTION_VIEW);
+							installIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+							installIntent.setDataAndType(Uri.fromFile(installFile), "application/vnd.android.package-archive");
+							getContext().startActivity(installIntent);
+							Intent hideIntent = new Intent(FloatWindowService.ACTION_HIDE_FLOAT_DETAIL);
+							hideIntent.putExtra("installation", true);
+							hideIntent.putExtra("app_info", appInfo);
+							hideIntent.putExtra("file_path", installFile);
+							hideIntent.setData(new Uri.Builder().scheme("package").build());
+							getContext().sendBroadcast(hideIntent);
+						}
+					}
 					
 					downloadStsIntent.putExtra(StatisticReceiver.NAME, downloadS);
 					getContext().sendBroadcast(downloadStsIntent);
 					
-					if(progressBar.getVisibility() != View.VISIBLE){
-						new FileLoader(getContext(), appInfo.getDownloadLink(), appInfo.getName()){
-							
-							@Override
-							public void onPreExecute(){
-								ratingBar.setVisibility(View.INVISIBLE);
-								progressBar.setVisibility(View.VISIBLE);
-							}
-							
-							@Override
-							public void onProgress(float progress){
-								progressBar.setProgress(progress);
-							}
-							
-							@Override
-							public void onFinish(File result){
-								ratingBar.setVisibility(View.VISIBLE);
-								progressBar.setVisibility(View.INVISIBLE);
-								if(result != null && result.exists()){
-									Intent installIntent = new Intent(Intent.ACTION_VIEW);
-									installIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-									installIntent.setDataAndType(Uri.fromFile(result), "application/vnd.android.package-archive");
-									getContext().startActivity(installIntent);
-									getContext().sendBroadcast(new Intent(FloatWindowService.ACTION_HIDE_FLOAT_DETAIL));
-								}
-							}
-							
-						}.executeOnExecutor(PzExecutorFactory.getApkLoadThreadPool());
-					}
+					
 					
 					/*
 					getContext().sendBroadcast(new Intent(FloatWindowService.ACTION_HIDE_FLOAT_DETAIL));
@@ -261,6 +352,35 @@ public class AppDetailBlock extends RelativeLayout {
 					 */
 				}
 			});
+		}
+	}
+
+	@Override
+	public void refreshProgress(String downloadLink, float progress) {
+		if(appInfo != null && appInfo.getDownloadLink().equals(downloadLink)){
+			if(progressBar.getVisibility() == View.GONE){
+				progressBar.setVisibility(View.VISIBLE);
+				ratingBar.setVisibility(View.INVISIBLE);
+			}
+			progressBar.setProgress(progress);
+		}
+	}
+
+	@Override
+	public void onDownloadStart(String downloadLink) {
+		if(appInfo != null && appInfo.getDownloadLink().equals(downloadLink)){
+			progressBar.setVisibility(View.VISIBLE);
+			ratingBar.setVisibility(View.INVISIBLE);
+		}
+	}
+
+	@Override
+	public void onDownloadComplete(String downloadLink, boolean isFileComplete, String resultFilePath) {
+		progressBar.setVisibility(View.GONE);
+		ratingBar.setVisibility(View.VISIBLE);
+		
+		if(isFileComplete && downloadLink != null && resultFilePath != null){
+			
 		}
 	}
 }

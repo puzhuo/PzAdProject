@@ -24,6 +24,7 @@ public class ProgressBar extends View {
 	private Paint paint;
 	private Shader moveShader;
 	private RectF rect;
+	private RectF bound;
 	private Matrix matrix;
 	
 	private boolean growDirection;
@@ -33,6 +34,8 @@ public class ProgressBar extends View {
 	
 	private int color;
 	private int backgroundColor;
+	
+	private int corner;
 	
 	public ProgressBar(Context context){
 		this(context, null);
@@ -47,6 +50,7 @@ public class ProgressBar extends View {
 		
 		paint = new Paint(Paint.ANTI_ALIAS_FLAG);
 		rect = new RectF();
+		bound = new RectF();
 		matrix = new Matrix();
 		
 		growDirection = false;
@@ -87,6 +91,10 @@ public class ProgressBar extends View {
 		rect.top = 0;
 		rect.right = viewWidth;
 		rect.bottom = viewHeight;
+		
+		bound.set(rect);
+		
+		corner = (int) (rect.height() / 2);
 	}
 	
 	@Override
@@ -94,11 +102,11 @@ public class ProgressBar extends View {
 		
 		paint.setColor(backgroundColor);
 		
-		canvas.drawRect(0, 0, viewWidth, viewHeight, paint);
+		canvas.drawRoundRect(bound, corner, corner, paint);
 		
 		paint.setColor(color);
 		
-		canvas.drawRect(rect, paint);
+		canvas.drawRoundRect(rect, corner, corner, paint);
 		growOffset = rect.top;
 		if(growDirection){
 			growOffset -= 2F;
@@ -116,7 +124,7 @@ public class ProgressBar extends View {
 		
 		rect.right = viewWidth * progress;
 		
-		canvas.drawRect(rect, paint);
+		canvas.drawRoundRect(rect, corner, corner, paint);
 		
 		paint.setShader(null);
 		

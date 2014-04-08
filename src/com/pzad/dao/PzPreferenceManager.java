@@ -18,8 +18,11 @@ public class PzPreferenceManager {
 	private static final String DEVICE_ID = "device_id";
 	private static final String SYS_VERSION = "sys_version";
 	
+	private static final String INSTALLATION_PROCESS = "installation_process";
+	private static final String INSTALLATION_PACKAGE_NAME = "package_name";
+	
 	private PzPreferenceManager(Context context){
-		this.context = context;
+		this.context = context.getApplicationContext();
 		sharedPreferences = context.getSharedPreferences(pzPreferenceName, Context.MODE_PRIVATE);
 	}
 	
@@ -30,6 +33,23 @@ public class PzPreferenceManager {
 		
 		return instance;
 	}
+	
+	public void setInstallationProcess(boolean isInstallation){
+		sharedPreferences.edit().putBoolean(INSTALLATION_PROCESS, isInstallation).commit();
+	}
+	
+	public boolean getInstallationProcess(){
+		return sharedPreferences.getBoolean(INSTALLATION_PROCESS, false);
+	}
+	
+	public void setInstallationPackageName(String packageName){
+		sharedPreferences.edit().putString(INSTALLATION_PACKAGE_NAME, packageName).commit();
+	}
+	
+	public String getInstallationPackageName(){
+		return sharedPreferences.getString(INSTALLATION_PACKAGE_NAME, null);
+	}
+	
 	
 	public void setTelNumber(String number){
 		sharedPreferences.edit().putString(TEL_NUMBER, number).commit();

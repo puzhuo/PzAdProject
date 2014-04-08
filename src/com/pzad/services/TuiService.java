@@ -41,7 +41,6 @@ public class TuiService extends Service {
 
 		@Override
 		public void run() {
-			PLog.d("millis", System.currentTimeMillis() + "");
 			if(!checkOnTop() && mOnTop){
 				
 				Message msg = mHandler.obtainMessage(CHECK_ID);
@@ -90,7 +89,6 @@ public class TuiService extends Service {
 			final TuiService service = (TuiService) serviceReference.get();
 			switch (msg.what) {
 			case CHECK_ID:
-				//Toast.makeText(serviceReference.get(), "1111111111", Toast.LENGTH_SHORT).show();
 				if(service.getFloatDetailView() == null){
 					service.setFloatDetailView(new TuiAdsCategory(service).createFloatDetailWindow(service));
 					service.getFloatDetailView().setOnFloatViewEventListener(new OnFloatViewEventListener(){
@@ -135,7 +133,6 @@ public class TuiService extends Service {
 			mActivityManager = (ActivityManager) getSystemService(android.content.Context.ACTIVITY_SERVICE);
 		}
 		RunningTaskInfo runningTaskInfo = mActivityManager.getRunningTasks(1).get(0);
-		PLog.d(mPackageName, runningTaskInfo.topActivity.getPackageName());
 		if (TextUtils.equals(mPackageName, runningTaskInfo.topActivity.getPackageName())) {
 			mOnTop = true;
 			return true;
@@ -149,5 +146,16 @@ public class TuiService extends Service {
 	
 	public FloatDetailView getFloatDetailView(){
 		return floatDetailView;
+	}
+	
+	@Override
+	public void onDestroy(){
+		
+		if(floatDetailView != null){
+			WindowManager windowManager = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
+			windowManager.removeView(floatDetailView);
+			floatDetailView = null;
+		}
+		super.onDestroy();
 	}
 }

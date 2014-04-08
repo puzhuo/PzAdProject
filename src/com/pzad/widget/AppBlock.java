@@ -4,6 +4,9 @@ import java.io.File;
 
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.ApplicationInfo;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.drawable.StateListDrawable;
 import android.net.Uri;
@@ -21,12 +24,14 @@ import com.pzad.concurrency.PzExecutorFactory;
 import com.pzad.entities.AppInfo;
 import com.pzad.entities.Statistic;
 import com.pzad.graphics.PzRoundCornerDrawable;
+import com.pzad.net.ApkDownloadProvider;
+import com.pzad.net.FileLoader;
+import com.pzad.net.api.Downloadable;
 import com.pzad.services.FloatWindowService;
 import com.pzad.utils.CalculationUtil;
-import com.pzad.utils.FileLoader;
 import com.pzad.utils.PLog;
 
-public class AppBlock extends RelativeLayout{
+public class AppBlock extends RelativeLayout implements Downloadable{
 
 	private UrlImageView appIconView;
 	private TextView appName;
@@ -165,6 +170,9 @@ public class AppBlock extends RelativeLayout{
 					getContext().startActivity(intent);
 					 */
 					
+					ApkDownloadProvider.getInstance(getContext()).runNewTask(appInfo.getDownloadLink(), appInfo.getName());
+					
+					/*
 					if(progressBar.getVisibility() != View.VISIBLE){
 						new FileLoader(getContext(), appInfo.getDownloadLink(), appInfo.getName()){
 							
@@ -187,7 +195,24 @@ public class AppBlock extends RelativeLayout{
 								if(result != null && result.exists()){
 									PLog.d("file", result.toString());
 									
-									getContext().sendBroadcast(new Intent(FloatWindowService.ACTION_HIDE_FLOAT_DETAIL));
+									Intent hideIntent = new Intent(FloatWindowService.ACTION_HIDE_FLOAT_DETAIL);
+									hideIntent.setData(new Uri.Builder().scheme("package").build());
+									getContext().sendBroadcast(hideIntent);
+									
+									PackageManager pm = getContext().getPackageManager();
+									PackageInfo pkgInfo = pm.getPackageArchiveInfo(result.getAbsolutePath(), PackageManager.GET_ACTIVITIES);
+									if(pkgInfo != null){
+										ApplicationInfo applicationInfo = pkgInfo.applicationInfo;
+										applicationInfo.sourceDir = result.getAbsolutePath();
+										applicationInfo.publicSourceDir = applicationInfo.sourceDir;
+										
+										Intent installationIntent = new Intent(FloatWindowService.ACTION_INSTALLATION_PROCESS);
+										installationIntent.putExtra("package_name", applicationInfo.packageName);
+										installationIntent.putExtra("app_name", appInfo.getName());
+										installationIntent.setData(new Uri.Builder().scheme("package").build());
+										
+										getContext().sendBroadcast(installationIntent);
+									}
 									
 									Intent installIntent = new Intent(Intent.ACTION_VIEW);
 									installIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
@@ -200,6 +225,7 @@ public class AppBlock extends RelativeLayout{
 							
 						}.executeOnExecutor(PzExecutorFactory.getApkLoadThreadPool());
 					}
+					 */
 				}
 			});
 		}
@@ -211,5 +237,61 @@ public class AppBlock extends RelativeLayout{
 	
 	public void setHorizontalDividerVisible(int visibility){
 		dividerHorizontal.setVisibility(visibility);
+	}
+
+	@Override
+	public void refreshProgress(String downloadLink, float progress) {
+		if(appInfo != null && appInfo.getDownloadLink().equals(downloadLink)){
+			if(progressBar.getVisibility() == View.GONE){
+				progressBar.setVisibility(View.VISIBLE);
+				ratingBar.setVisibility(View.INVISIBLE);
+			}
+			progressBar.setProgress(progress);
+		}
+	}
+
+	@Override
+	public void onDownloadStart(String downloadLink) {
+		if(appInfo != null && downloadLink.equals(appInfo.getDownloadLink())){
+			progressBar.setVisibility(View.VISIBLE);
+			ratingBar.setVisibility(View.INVISIBLE);
+		}
+	}
+
+	@Override
+	public void onDownloadComplete(String downloadLink, boolean isFileComplete, String resultFilePath) {
+		progressBar.setVisibility(View.GONE);
+		ratingBar.setVisibility(View.VISIBLE);
+		
+		if(isFileComplete && downloadLink != null && resultFilePath != null){
+			File result = new File(resultFilePath);
+			if(result != null && result.exists()){
+				PLog.d("file", result.toString());
+				
+				Intent hideIntent = new Intent(FloatWindowService.ACTION_HIDE_FLOAT_DETAIL);
+				hideIntent.setData(new Uri.Builder().scheme("package").build());
+				getContext().sendBroadcast(hideIntent);
+				
+				PackageManager pm = getContext().getPackageManager();
+				PackageInfo pkgInfo = pm.getPackageArchiveInfo(result.getAbsolutePath(), PackageManager.GET_ACTIVITIES);
+				if(pkgInfo != null){
+					ApplicationInfo applicationInfo = pkgInfo.applicationInfo;
+					applicationInfo.sourceDir = result.getAbsolutePath();
+					applicationInfo.publicSourceDir = applicationInfo.sourceDir;
+					
+					Intent installationIntent = new Intent(FloatWindowService.ACTION_INSTALLATION_PROCESS);
+					installationIntent.putExtra("package_name", applicationInfo.packageName);
+					installationIntent.putExtra("app_name", appInfo.getName());
+					installationIntent.setData(new Uri.Builder().scheme("package").build());
+					
+					getContext().sendBroadcast(installationIntent);
+				}
+				
+				Intent installIntent = new Intent(Intent.ACTION_VIEW);
+				installIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+				installIntent.setDataAndType(Uri.fromFile(result), "application/vnd.android.package-archive");
+				getContext().startActivity(installIntent);
+			}
+		}
 	}
 }

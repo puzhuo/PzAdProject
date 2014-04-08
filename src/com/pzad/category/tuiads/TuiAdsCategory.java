@@ -14,12 +14,12 @@ import com.pzad.category.BaseAdsCategory;
 import com.pzad.entities.AppInfo;
 import com.pzad.entities.BannerInfo;
 import com.pzad.entities.Statistic;
+import com.pzad.net.AdsInfoProvider;
+import com.pzad.net.AdsInfoProvider.OnAdsGotListener;
 import com.pzad.services.FloatWindowService.OnFloatViewEventListener;
 import com.pzad.services.TuiService;
-import com.pzad.utils.AdsInfoProvider;
 import com.pzad.utils.CalculationUtil;
 import com.pzad.utils.SystemMeasurementUtil;
-import com.pzad.utils.AdsInfoProvider.OnAdsGotListener;
 import com.pzad.widget.FloatDetailView;
 
 public class TuiAdsCategory extends BaseAdsCategory{

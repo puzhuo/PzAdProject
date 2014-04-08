@@ -1,16 +1,24 @@
 package com.pzad.services;
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import org.apache.http.util.EncodingUtils;
+
 import android.app.ActivityManager;
-import android.app.ActivityManager.RunningAppProcessInfo;
+import android.app.ActivityManager.RunningServiceInfo;
 import android.app.ActivityManager.RunningTaskInfo;
 import android.app.Service;
 import android.content.BroadcastReceiver;
@@ -27,12 +35,16 @@ import android.os.Parcelable;
 import android.view.WindowManager;
 import android.view.WindowManager.LayoutParams;
 
+import com.pzad.broadcast.StatisticReceiver;
 import com.pzad.category.floatads.FloatAdsCategory;
 import com.pzad.category.floatads.FloatCircleView;
 import com.pzad.entities.AppInfo;
 import com.pzad.entities.BannerInfo;
-import com.pzad.utils.AdsInfoProvider;
-import com.pzad.utils.AdsInfoProvider.OnAdsGotListener;
+import com.pzad.entities.Statistic;
+import com.pzad.net.AdsInfoProvider;
+import com.pzad.net.AdsInfoProvider.OnAdsGotListener;
+import com.pzad.net.FileLoader;
+import com.pzad.utils.FileUtil;
 import com.pzad.utils.PLog;
 import com.pzad.widget.FloatDetailView;
 
@@ -46,6 +58,7 @@ public class FloatWindowService extends Service{
 	private static final int HANDLE_RESTORE_FLOAT_DETAIL_VIEW = 5;
 	
 	public static final String ACTION_HIDE_FLOAT_DETAIL = "com.pzad.floatdetailview.HIDE";
+	public static final String ACTION_INSTALLATION_PROCESS = "com.pzad.service.INSTALLATION_PROCESS";
 	
 	private boolean isOtherFloatWindowRunning;
 	
@@ -61,6 +74,9 @@ public class FloatWindowService extends Service{
 	private WindowManager windowManager;
 	
 	private FloatEventReceiver floatEventReceiver;
+	
+	private String installationPackageName;
+	private String installationName;
 	
 	private FloatHandler handler;
 	private Timer timer;
@@ -111,12 +127,12 @@ public class FloatWindowService extends Service{
 	
 	@Override
 	public void onCreate(){
-		PLog.d("service", "started");
         isOtherFloatWindowRunning = false;
         isInDetailMode = false;
         
         windowManager = (WindowManager) getSystemService(Context.WINDOW_SERVICE);
 		
+		/*
 		ActivityManager activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
 		List<RunningAppProcessInfo> runningProcesses = activityManager.getRunningAppProcesses();
 		for(RunningAppProcessInfo processInfo : runningProcesses){
@@ -125,10 +141,18 @@ public class FloatWindowService extends Service{
 				break;
 			}
 		}
+		 */
+        
+        if(checkOtherFloatWindowExists()){
+        	isOtherFloatWindowRunning = true;
+        }
 		
 		floatEventReceiver = new FloatEventReceiver();
 		IntentFilter intentFilter = new IntentFilter();
 		intentFilter.addAction(ACTION_HIDE_FLOAT_DETAIL);
+		intentFilter.addAction(ACTION_INSTALLATION_PROCESS);
+		intentFilter.addAction(Intent.ACTION_PACKAGE_ADDED);
+		intentFilter.addDataScheme("package");
 		
 		registerReceiver(floatEventReceiver, intentFilter);
 		
@@ -140,7 +164,6 @@ public class FloatWindowService extends Service{
 		
 		if(intent.getExtras() != null && intent.getExtras().containsKey("SERVICE_DELAY_TIME")){
 			delayMillis = intent.getExtras().getLong("SERVICE_DELAY_TIME");
-			PLog.d(delayMillis + "", "adsf");
 		}
 		
 		handler = new FloatHandler(this);
@@ -153,6 +176,10 @@ public class FloatWindowService extends Service{
 	
 	@Override
 	public void onDestroy(){
+		File configFile = new File(FileUtil.getExternalPath(this) + "/config/floatwindow.cfg");
+		if(configFile.exists()){
+			configFile.delete();
+		}
 		unregisterReceiver(floatEventReceiver);
 		startService(new Intent(this, FloatWindowService.class));
 	}
@@ -176,7 +203,6 @@ public class FloatWindowService extends Service{
 
 				@Override
 				public void onCircleViewTap() {
-					// TODO Auto-generated method stub
 					if(service_tmp.getFloatDetailView() == null){
 						WindowManager.LayoutParams params = (LayoutParams) service_tmp.getFloatCircleView().getLayoutParams();
 						floatCircleViewStateX = params.x;
@@ -192,16 +218,10 @@ public class FloatWindowService extends Service{
 				}
 
 				@Override
-				public void onCircleViewCloseTap() {
-					// TODO Auto-generated method stub
-					
-				}
+				public void onCircleViewCloseTap() {}
 
 				@Override
-				public void onCircleViewLongTap() {
-					// TODO Auto-generated method stub
-					
-				}
+				public void onCircleViewLongTap() {}
 
 				@Override
 				public void onDetailViewClose() {
@@ -322,9 +342,54 @@ public class FloatWindowService extends Service{
 	private long getAvailableMemory(Context context){
 		ActivityManager activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
 		ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
-		activityManager.getMemoryInfo(mi);;
+		activityManager.getMemoryInfo(mi);
 		
 		return mi.availMem;
+	}
+	
+	private boolean checkOtherFloatWindowExists(){
+		File configFile = new File(FileUtil.getExternalPath(this) + "/config/floatwindow.cfg");
+		if(configFile.exists()){
+			try {
+				InputStream is = new FileInputStream(configFile);
+				int length = is.available();
+				byte[] buffer = new byte[length];
+				is.read(buffer);
+				String result = EncodingUtils.getString(buffer, "UTF-8");
+				if(result != null && !result.equals(getPackageName())){
+					ActivityManager activityManager = (ActivityManager) getSystemService(Context.ACTIVITY_SERVICE);
+					List<RunningServiceInfo> runningServices = activityManager.getRunningServices(65536);
+					for(RunningServiceInfo s : runningServices){
+						if(s.service.getPackageName().equals(result)){
+							is.close();
+							return true;
+						}
+					}
+				}
+				is.close();
+			} catch (FileNotFoundException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
+		
+		File configDirectory = new File(FileUtil.getExternalPath(this) + "/config");
+		configDirectory.mkdirs();
+		try {
+			configFile.createNewFile();
+			BufferedWriter bw = new BufferedWriter(new FileWriter(configFile));
+			String input = getPackageName();
+			bw.write(input);
+			bw.close();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		
+		return false;
 	}
 	
 	public void setFloatCircleView(FloatCircleView floatCircleView){
@@ -366,6 +431,27 @@ public class FloatWindowService extends Service{
 			if(intent.getAction().equals(ACTION_HIDE_FLOAT_DETAIL)){
 				Message msg = handler.obtainMessage(FloatWindowService.HANDLE_HIDE_FLOAT_DETAIL_VIEW);
 				msg.sendToTarget();
+			}
+			if(intent.getAction().equals(ACTION_INSTALLATION_PROCESS)){
+				installationName = intent.getStringExtra("app_name");
+				installationPackageName = intent.getStringExtra("package_name");
+			}
+			if(intent.getAction().equals(Intent.ACTION_PACKAGE_ADDED) && installationPackageName != null){
+				PLog.d("package_added", installationPackageName);
+				Statistic s = new Statistic();
+				s.setName(installationName, Statistic.TYPE_APP);
+				s.setInstallationCount(1);
+				
+				Intent sIntent = new Intent(StatisticReceiver.ACTION_RECEIVE_STATISTIC);
+				sIntent.putExtra(StatisticReceiver.NAME, s);
+				FloatWindowService.this.sendBroadcast(sIntent);
+				
+				File deleteFile = new File(FileLoader.getCacheFilePath(FloatWindowService.this), installationName + ".apk");
+				if(deleteFile.exists()) deleteFile.delete();
+				
+				installationPackageName = null;
+				installationName = null;
+				
 			}
 		}
 		

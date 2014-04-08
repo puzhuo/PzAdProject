@@ -1,21 +1,16 @@
 package com.pzad.widget;
 
-import java.io.BufferedInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.URLConnection;
+import android.content.Context;
+import android.graphics.Bitmap;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.Drawable;
+import android.util.AttributeSet;
+import android.widget.ImageView;
 
 import com.pzad.concurrency.PzExecutorFactory;
 import com.pzad.concurrency.PzThread;
-import com.pzad.utils.image.ImageLoader;
-
-import android.content.Context;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.util.AttributeSet;
-import android.widget.ImageView;
+import com.pzad.net.image.ImageLoader;
+import com.pzad.utils.PLog;
 
 public class UrlImageView extends ImageView{
 	
@@ -66,9 +61,29 @@ public class UrlImageView extends ImageView{
 			public void onFinish(Bitmap result) {
 				if(result != null){
 					UrlImageView.this.setImageBitmap(result);
+					onFinishImageLoad();
 				}
 			}
 			
 		}.executeOnExecutor(PzExecutorFactory.getImageLoadThreadPool());
 	}
+	
+	public void onFinishImageLoad(){};
+	
+	/*
+	@Override
+	protected void onDetachedFromWindow(){
+		super.onDetachedFromWindow();
+		Drawable drawable = getDrawable();
+		if(drawable != null && drawable instanceof BitmapDrawable){
+			PLog.d("drawable", drawable.toString());
+			Bitmap recycleBitmap = ((BitmapDrawable) drawable).getBitmap();
+			if(recycleBitmap != null){
+				PLog.d("bitmap", recycleBitmap.toString());
+				recycleBitmap.recycle();
+				recycleBitmap = null;
+			}
+		}
+	}
+	 */
 }

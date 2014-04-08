@@ -37,19 +37,19 @@ public abstract class PzThread<Result> {
 		message.sendToTarget();
 	}
 	
-	public void sendProgress(float progress){
+	protected void sendProgress(float progress){
 		Message message = handler.obtainMessage(POST_PROGRESS, new PzThreadResult<Result>(this, null, progress));
 		message.sendToTarget();
 	}
 	
-	public abstract Result run();
+	protected abstract Result run();
 	
-	public void onPreExecute(){};
-	public void onAborted(){};
+	protected void onPreExecute(){};
+	protected void onAborted(){};
 	
-	public abstract void onFinish(Result result);
+	protected abstract void onFinish(Result result);
 	
-	public void onProgress(float progress){};
+	protected void onProgress(float progress){};
 	
 	private static class InnerHandler extends Handler{
 		@Override
@@ -76,5 +76,9 @@ public abstract class PzThread<Result> {
 			this.data = data;
 			this.progress = progress;
 		}
+	}
+	
+	public boolean isRunning(){
+		return currentThread != null && currentThread.isAlive();
 	}
 }

@@ -1,4 +1,4 @@
-package com.pzad.utils;
+package com.pzad.net;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -10,6 +10,8 @@ import java.net.URLConnection;
 import android.content.Context;
 
 import com.pzad.concurrency.PzThread;
+import com.pzad.utils.FileUtil;
+import com.pzad.utils.PLog;
 
 public class FileLoader extends PzThread<File> {
 
@@ -22,21 +24,14 @@ public class FileLoader extends PzThread<File> {
 		this.url = url;
 		this.name = name + ".apk";
 		
-		File file;
-		if(android.os.Environment.getExternalStorageState().equals(android.os.Environment.MEDIA_MOUNTED)){
-			String[] dirNameArray = context.getPackageName().split("\\.");
-			String dirName = "";
-			for(String item : dirNameArray){
-				dirName += item + "_";
-			}
-			
-			file = new File(android.os.Environment.getExternalStorageDirectory() + "/" + dirName + "cache/data/apk");
-		}else{
-			file = context.getCacheDir();
-		}
+		File file = new File(getCacheFilePath(context));
 		
 		if(!file.exists()) file.mkdirs();
 		filePath = file.getPath();
+	}
+	
+	public static String getCacheFilePath(Context context){
+		return FileUtil.getExternalPath(context) + "/apk";
 	}
 
 	@Override
@@ -48,6 +43,13 @@ public class FileLoader extends PzThread<File> {
 			urlConnection.connect();
 			
 			int length = urlConnection.getContentLength();
+			onFileLengthGot(length);
+			
+			if(result.exists() && result.length() >= length){
+				PLog.d("urlLength:" + length, "fileLength:" + result.length());
+				return result;
+			}
+			
 			int bufferSize = 1024;
 			
 			InputStream is = urlConnection.getInputStream();
@@ -76,8 +78,10 @@ public class FileLoader extends PzThread<File> {
 	}
 
 	@Override
-	public void onFinish(File result) {
+	protected void onFinish(File result) {
 		
 	}
+	
+	protected void onFileLengthGot(int length){}
 
 }

@@ -1,4 +1,4 @@
-package com.pzad.utils.image;
+package com.pzad.net.image;
 
 import java.io.InputStream;
 import java.io.OutputStream;

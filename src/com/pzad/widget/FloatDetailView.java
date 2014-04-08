@@ -197,6 +197,7 @@ public class FloatDetailView extends RelativeLayout{
 		addView(buttonLayout, buttonLayoutParams);
 		
 		viewPager = new ViewPager(context, attrs);
+		viewPager.setOffscreenPageLimit(3);
 		RelativeLayout.LayoutParams contentBackgroundParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.FILL_PARENT);
 		int margin = CalculationUtil.dip2px(context, 10);
 		contentBackgroundParams.setMargins(10, margin * 4, 10, 0);

@@ -1,4 +1,4 @@
-package com.pzad.utils.image;
+package com.pzad.net.image;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -35,6 +35,7 @@ public class MemoryCache {
 	}
 	
 	public void put(String id, Bitmap bitmap){
+		checkSize();
 		try{
 			if(cache.containsKey(id)) size -= getSizeInBytes(cache.get(id));
 			cache.put(id, bitmap);

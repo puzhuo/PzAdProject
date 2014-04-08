@@ -5,10 +5,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.pzad.entities.AppInfo;
-import com.pzad.utils.CalculationUtil;
-import com.pzad.utils.PLog;
-
 import android.content.Context;
 import android.os.Bundle;
 import android.os.Parcelable;
@@ -21,7 +17,9 @@ import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.GridView;
 import android.widget.ListView;
-import android.widget.RelativeLayout;
+
+import com.pzad.entities.AppInfo;
+import com.pzad.utils.CalculationUtil;
 
 public class ViewGroupPagerAdapter extends PagerAdapter{
 	
@@ -62,7 +60,6 @@ public class ViewGroupPagerAdapter extends PagerAdapter{
 		
 		this.container.set(position, newInstance);
 		if(newInstance instanceof ListView && states.size() > position){
-			PLog.d("states", states.get(position).get("index") + "");
 			((ListView) newInstance).setSelectionFromTop(states.get(position).get("index"), states.get(position).get("top"));
 		}
 		if(newInstance instanceof GridView && states.size() > position){
@@ -187,8 +184,6 @@ public class ViewGroupPagerAdapter extends PagerAdapter{
 			View child = ((AbsListView) v).getChildAt(0);
 			int top = child == null ? 0 : child.getTop();
 			
-			PLog.d("top:" + top, "index:" + index);
-			
 			Map<String, Integer> map  = new HashMap<String, Integer>();
 			map.put("index", index);
 			map.put("top", top);
@@ -207,7 +202,6 @@ public class ViewGroupPagerAdapter extends PagerAdapter{
 		if(adapters != null && adapters.size() > 0){
 			for(Adapter a : adapters){
 				if(a instanceof BaseAdapter){
-					PLog.d("adapter", "notify");
 					((BaseAdapter) a).notifyDataSetChanged();
 				}
 			}
