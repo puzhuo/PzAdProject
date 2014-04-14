@@ -3,24 +3,25 @@ package com.pzad.widget;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.pzad.Constants;
-import com.pzad.adapter.DetailGridViewAdapter;
-import com.pzad.adapter.ViewGroupPagerAdapter;
-import com.pzad.entities.AppInfo;
-import com.pzad.graphics.PzRoundCornerDrawable;
-import com.pzad.services.FloatWindowService.OnFloatViewEventListener;
-import com.pzad.utils.CalculationUtil;
-
 import android.content.Context;
 import android.content.res.ColorStateList;
+import android.graphics.Canvas;
+import android.graphics.drawable.GradientDrawable;
 import android.support.v4.view.ViewPager;
 import android.util.AttributeSet;
 import android.view.View;
 import android.view.WindowManager;
 import android.widget.Button;
-import android.widget.GridView;
 import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
+
+import com.pzad.Constants;
+import com.pzad.adapter.ViewGroupPagerAdapter;
+import com.pzad.entities.AppInfo;
+import com.pzad.entities.NewsInfo;
+import com.pzad.graphics.PzRoundCornerDrawable;
+import com.pzad.services.FloatWindowService.OnFloatViewEventListener;
+import com.pzad.utils.CalculationUtil;
 
 public class FloatDetailView extends RelativeLayout{
 	
@@ -39,7 +40,11 @@ public class FloatDetailView extends RelativeLayout{
 	private ViewPager viewPager;
 	private ViewGroupPagerAdapter viewPagerAdapter;
 	
+	private GradientDrawable fadeOutDrawable;
+	private GradientDrawable fadeInDrawable;
+	
 	private List<AppInfo> appDatas;
+	private List<NewsInfo> newsDatas;
 	
 	private WindowManager.LayoutParams layoutParams;
 	
@@ -109,6 +114,13 @@ public class FloatDetailView extends RelativeLayout{
 	}
 	
 	private void init(Context context, AttributeSet attrs){
+		
+		int bottomColor = 0x44000000;
+		int middleColor = 0x11000000;
+		
+		fadeOutDrawable = new GradientDrawable(GradientDrawable.Orientation.TOP_BOTTOM, new int[]{bottomColor, middleColor, 0});
+		fadeInDrawable = new GradientDrawable(GradientDrawable.Orientation.BOTTOM_TOP, new int[]{bottomColor, middleColor, 0});
+		
 		LinearLayout buttonLayout = new LinearLayout(context, attrs);
 		buttonLayout.setId(1024 * 65536);
 		RelativeLayout.LayoutParams buttonLayoutParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
@@ -206,7 +218,8 @@ public class FloatDetailView extends RelativeLayout{
 		addView(viewPager, contentBackgroundParams);
 		viewPager.setBackgroundColor(0xFFDDDDDD);
 		appDatas = new ArrayList<AppInfo>();
-		viewPagerAdapter = new ViewGroupPagerAdapter(context, simpleForm ? ViewGroupPagerAdapter.TYPE_SIMPLE : ViewGroupPagerAdapter.TYPE_ALL, appDatas);
+		newsDatas = new ArrayList<NewsInfo>();
+		viewPagerAdapter = new ViewGroupPagerAdapter(context, simpleForm ? ViewGroupPagerAdapter.TYPE_SIMPLE : ViewGroupPagerAdapter.TYPE_ALL, appDatas, newsDatas);
 		viewPager.setAdapter(viewPagerAdapter);
 		
 		PzPagerIndicator indicator = new PzPagerIndicator(context, attrs);
@@ -276,8 +289,19 @@ public class FloatDetailView extends RelativeLayout{
 		viewPagerAdapter.notifyChildDataChanged();
 	}
 	
+	public void setNewsInfos(List<NewsInfo> datas){
+		newsDatas.clear();
+		newsDatas.addAll(datas);
+		
+		viewPagerAdapter.notifyChildDataChanged();
+	}
+	
 	public List<AppInfo> getAppInfos(){
 		return appDatas;
+	}
+	
+	public List<NewsInfo> getNewsInfos(){
+		return newsDatas;
 	}
 	
 	public ViewPager getViewPager(){
@@ -290,5 +314,16 @@ public class FloatDetailView extends RelativeLayout{
 		
 		width = MeasureSpec.getSize(widthMeasureSpec);
 		height = MeasureSpec.getSize(heightMeasureSpec);
+	}
+	
+	@Override
+	public void dispatchDraw(Canvas canvas){
+		super.dispatchDraw(canvas);
+		
+		fadeOutDrawable.setBounds(viewPager.getLeft(), viewPager.getTop(), viewPager.getRight(), viewPager.getTop() + 20);
+		fadeOutDrawable.draw(canvas);
+		
+		fadeInDrawable.setBounds(viewPager.getLeft(), viewPager.getBottom() - 20, viewPager.getRight(), viewPager.getBottom());
+		fadeInDrawable.draw(canvas);
 	}
 }

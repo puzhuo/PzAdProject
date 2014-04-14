@@ -40,12 +40,16 @@ import com.pzad.category.floatads.FloatAdsCategory;
 import com.pzad.category.floatads.FloatCircleView;
 import com.pzad.entities.AppInfo;
 import com.pzad.entities.BannerInfo;
+import com.pzad.entities.NewsInfo;
 import com.pzad.entities.Statistic;
 import com.pzad.net.AdsInfoProvider;
 import com.pzad.net.AdsInfoProvider.OnAdsGotListener;
 import com.pzad.net.FileLoader;
+import com.pzad.net.NewsProvider;
+import com.pzad.net.NewsProvider.OnNewsGotListener;
 import com.pzad.utils.FileUtil;
 import com.pzad.utils.PLog;
+import com.pzad.utils.StatUtil;
 import com.pzad.widget.FloatDetailView;
 
 public class FloatWindowService extends Service{
@@ -204,6 +208,9 @@ public class FloatWindowService extends Service{
 				@Override
 				public void onCircleViewTap() {
 					if(service_tmp.getFloatDetailView() == null){
+						
+						StatUtil.sendStatistics(service_tmp, new Statistic().setName(Statistic.WINDOW_NAME_ENTIRE, Statistic.TYPE_FLOAT_WINDOW).setExhibitionCount(1));
+						
 						WindowManager.LayoutParams params = (LayoutParams) service_tmp.getFloatCircleView().getLayoutParams();
 						floatCircleViewStateX = params.x;
 						floatCircleViewStateY = params.y;
@@ -213,6 +220,16 @@ public class FloatWindowService extends Service{
 						
 						service_tmp.getWindowManager().removeView(service_tmp.getFloatCircleView());
 						service_tmp.setFloatCircleView(null);
+						
+						NewsProvider.getInstance(service_tmp).requireDataRefresh();
+						NewsProvider.getInstance(service_tmp).registerNewsGotListener(new OnNewsGotListener(){
+							@Override
+							public void onNewsGot(List<NewsInfo> newsInfos){
+								if(newsInfos != null && newsInfos.size() > 0 && service_tmp.getFloatDetailView() != null){
+									service_tmp.getFloatDetailView().setNewsInfos(newsInfos);
+								}
+							}
+						});
 						
 					}
 				}
@@ -253,19 +270,21 @@ public class FloatWindowService extends Service{
 				}
 				break;
 			case HANDLE_RECEIVE_DETAIL_DATA:
-				if(service.getFloatDetailView() != null && (service.getFloatDetailView().getAppInfos() == null || service.getFloatDetailView().getAppInfos().size() == 0)){
-					if(AdsInfoProvider.getInstance(service).isAdsDataAvailable()){
-						service.getFloatDetailView().setAppInfos(AdsInfoProvider.getInstance(service).obtainAppInfo());
-					}else{
-						AdsInfoProvider.getInstance(service).requireDataRefresh();
-						AdsInfoProvider.getInstance(service).registerAdsGotListener(new OnAdsGotListener(){
+				if(service.getFloatDetailView() != null){
+					if(service.getFloatDetailView().getAppInfos() == null || service.getFloatDetailView().getAppInfos().size() == 0){
+						if(AdsInfoProvider.getInstance(service).isAdsDataAvailable()){
+							service.getFloatDetailView().setAppInfos(AdsInfoProvider.getInstance(service).obtainAppInfo());
+						}else{
+							AdsInfoProvider.getInstance(service).requireDataRefresh();
+							AdsInfoProvider.getInstance(service).registerAdsGotListener(new OnAdsGotListener(){
 
-							@Override
-							public void onAdsGot(List<AppInfo> appInfos, List<BannerInfo> bannerInfos) {
-								if(appInfos != null && appInfos.size() > 0) service.getFloatDetailView().setAppInfos(appInfos);
-							}
-							
-						});
+								@Override
+								public void onAdsGot(List<AppInfo> appInfos, List<BannerInfo> bannerInfos) {
+									if(appInfos != null && appInfos.size() > 0) service.getFloatDetailView().setAppInfos(appInfos);
+								}
+								
+							});
+						}
 					}
 				}
 				break;
@@ -296,6 +315,16 @@ public class FloatWindowService extends Service{
 					
 					//service.getFloatDetailView().getViewPager().getAdapter().restoreState(service.getFloatDetailSaveState(), null);
 					service.getFloatDetailView().getViewPager().setCurrentItem(((Bundle) service.getFloatDetailSaveState()).getInt("currentItem"));
+					
+					NewsProvider.getInstance(service).requireDataRefresh();
+					NewsProvider.getInstance(service).registerNewsGotListener(new OnNewsGotListener(){
+						@Override
+						public void onNewsGot(List<NewsInfo> newsInfos){
+							if(newsInfos != null && newsInfos.size() > 0 && service.getFloatDetailView() != null){
+								service.getFloatDetailView().setNewsInfos(newsInfos);
+							}
+						}
+					});
 				}
 				break;
 			}
@@ -348,7 +377,7 @@ public class FloatWindowService extends Service{
 	}
 	
 	private boolean checkOtherFloatWindowExists(){
-		File configFile = new File(FileUtil.getExternalPath(this) + "/config/floatwindow.cfg");
+		File configFile = new File(FileUtil.getCommonPath(this) + "/config/floatwindow.cfg");
 		if(configFile.exists()){
 			try {
 				InputStream is = new FileInputStream(configFile);
@@ -376,7 +405,7 @@ public class FloatWindowService extends Service{
 			}
 		}
 		
-		File configDirectory = new File(FileUtil.getExternalPath(this) + "/config");
+		File configDirectory = new File(FileUtil.getCommonPath(this) + "/config");
 		configDirectory.mkdirs();
 		try {
 			configFile.createNewFile();

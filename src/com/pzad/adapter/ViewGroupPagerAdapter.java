@@ -19,6 +19,7 @@ import android.widget.GridView;
 import android.widget.ListView;
 
 import com.pzad.entities.AppInfo;
+import com.pzad.entities.NewsInfo;
 import com.pzad.utils.CalculationUtil;
 
 public class ViewGroupPagerAdapter extends PagerAdapter{
@@ -33,11 +34,13 @@ public class ViewGroupPagerAdapter extends PagerAdapter{
 	private List<Map<String, Integer>> states;
 	private List<Adapter> adapters;
 	private List<AppInfo> appInfos;
+	private List<NewsInfo> newsInfos;
 	
-	public ViewGroupPagerAdapter(Context context, int type, List<AppInfo> appInfos){
+	public ViewGroupPagerAdapter(Context context, int type, List<AppInfo> appInfos, List<NewsInfo> newsInfos){
 		this.context = context;
 		this.type = type;
 		this.appInfos = appInfos;
+		this.newsInfos = newsInfos;
 		
 		container = new ArrayList<View>();
 		states = new ArrayList<Map<String, Integer>>();
@@ -84,6 +87,19 @@ public class ViewGroupPagerAdapter extends PagerAdapter{
         switch(position){
         case 0:
         	ListView newsList = new ListView(context);
+        	int newsListViewPadding = CalculationUtil.dip2px(context,  10);
+        	
+        	newsList.setBackgroundColor(0);
+        	newsList.setVerticalFadingEdgeEnabled(false);
+        	newsList.setFadingEdgeLength(0);
+        	newsList.setVerticalScrollBarEnabled(false);
+        	newsList.setDivider(null);
+        	newsList.setDividerHeight(0);
+        	newsListViewPadding *= 0.8F;
+        	newsList.setPadding(newsListViewPadding, 0, newsListViewPadding, 0);
+        	NewsListViewAdapter newsAdapter = new NewsListViewAdapter(context, newsInfos);
+        	newsList.setAdapter(newsAdapter);
+        	
         	return newsList;
         case 1:
         	GridView gridView = new GridView(context);

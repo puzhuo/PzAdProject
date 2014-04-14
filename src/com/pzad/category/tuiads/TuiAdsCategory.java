@@ -16,7 +16,6 @@ import com.pzad.entities.BannerInfo;
 import com.pzad.entities.Statistic;
 import com.pzad.net.AdsInfoProvider;
 import com.pzad.net.AdsInfoProvider.OnAdsGotListener;
-import com.pzad.services.FloatWindowService.OnFloatViewEventListener;
 import com.pzad.services.TuiService;
 import com.pzad.utils.CalculationUtil;
 import com.pzad.utils.SystemMeasurementUtil;

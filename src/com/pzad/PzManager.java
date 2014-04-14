@@ -81,6 +81,25 @@ public class PzManager {
 	}
 	
 	public void destroy(){
+		
+		if(floatAdsInstance != null) {
+			floatAdsInstance.stop();
+			floatAdsInstance = null;
+		}
+		if(tuiAdsInstance != null){
+			tuiAdsInstance.stop();
+			tuiAdsInstance = null;
+		}
+		
+		for(BannerAdsCategory bannerCategory : bannerAdsContainer){
+			if(bannerCategory != null){
+				bannerCategory.stop();
+			    bannerCategory = null;
+			}
+		}
+		
+		bannerAdsContainer.clear();
+		
 		pzManager = null;
 	}
 }

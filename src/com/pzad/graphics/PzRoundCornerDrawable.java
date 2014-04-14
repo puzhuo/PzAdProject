@@ -83,20 +83,13 @@ public class PzRoundCornerDrawable extends Drawable {
 
 	@Override
 	public int getOpacity() {
-		// TODO Auto-generated method stub
 		return PixelFormat.TRANSPARENT;
 	}
 
 	@Override
-	public void setAlpha(int alpha) {
-		// TODO Auto-generated method stub
-		
-	}
+	public void setAlpha(int alpha) {}
 
 	@Override
-	public void setColorFilter(ColorFilter cf) {
-		// TODO Auto-generated method stub
-		
-	}
+	public void setColorFilter(ColorFilter cf) {}
 
 }

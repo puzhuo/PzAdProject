@@ -6,7 +6,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 
-import com.pzad.dao.PzPreferenceManager;
 import com.pzad.entities.Statistic;
 import com.pzad.utils.PLog;
 

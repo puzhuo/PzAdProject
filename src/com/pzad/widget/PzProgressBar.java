@@ -1,10 +1,6 @@
 package com.pzad.widget;
 
-import com.pzad.Constants;
-import com.pzad.utils.CalculationUtil;
-
 import android.content.Context;
-import android.content.res.TypedArray;
 import android.graphics.Canvas;
 import android.graphics.LinearGradient;
 import android.graphics.Matrix;
@@ -14,7 +10,10 @@ import android.graphics.Shader;
 import android.util.AttributeSet;
 import android.view.View;
 
-public class ProgressBar extends View {
+import com.pzad.Constants;
+import com.pzad.utils.CalculationUtil;
+
+public class PzProgressBar extends View {
 
 	private float progress = 1.0F;
 	
@@ -37,15 +36,15 @@ public class ProgressBar extends View {
 	
 	private int corner;
 	
-	public ProgressBar(Context context){
+	public PzProgressBar(Context context){
 		this(context, null);
 	}
 	
-	public ProgressBar(Context context, AttributeSet attrs){
+	public PzProgressBar(Context context, AttributeSet attrs){
 		this(context, attrs, 0);
 	}
 	
-	public ProgressBar(Context context, AttributeSet attrs, int defStyle){
+	public PzProgressBar(Context context, AttributeSet attrs, int defStyle){
 		super(context, attrs, defStyle);
 		
 		paint = new Paint(Paint.ANTI_ALIAS_FLAG);
@@ -101,11 +100,11 @@ public class ProgressBar extends View {
 	public void onDraw(Canvas canvas){
 		
 		paint.setColor(backgroundColor);
-		
+		//draw background
 		canvas.drawRoundRect(bound, corner, corner, paint);
 		
 		paint.setColor(color);
-		
+		//draw bar(static part)
 		canvas.drawRoundRect(rect, corner, corner, paint);
 		growOffset = rect.top;
 		if(growDirection){
@@ -123,7 +122,7 @@ public class ProgressBar extends View {
 		paint.setShader(moveShader);
 		
 		rect.right = viewWidth * progress;
-		
+		//draw bar(moving part)
 		canvas.drawRoundRect(rect, corner, corner, paint);
 		
 		paint.setShader(null);

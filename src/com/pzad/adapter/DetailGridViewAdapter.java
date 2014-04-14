@@ -41,15 +41,21 @@ public class DetailGridViewAdapter extends BaseAdapter {
 	public View getView(int position, View convertView, ViewGroup parent) {
 		if(convertView == null){
 			convertView = new AppBlock(context);
-			if(convertView instanceof Downloadable){
-				ApkDownloadProvider.getInstance(context).registerDownloadable(((Downloadable) convertView));
-			}
 		}
 		
 		AppBlock block = (AppBlock) convertView;
 		block.setAppInfo(getItem(position));
+		ApkDownloadProvider.getInstance(context).registerDownloadable(block);
 		
-		block.onDownloadComplete(null, false, null);
+		String currentDownloadLink = ApkDownloadProvider.getInstance(context).getCurrentDownloadLink();
+		
+		if(currentDownloadLink != null && currentDownloadLink.equals(block.getAppInfo().getDownloadLink())){
+			float progress = ApkDownloadProvider.getInstance(context).getCurrentDownloadProgress();
+			progress = progress == -1 ? 1 : progress;
+			block.refreshProgress(currentDownloadLink, progress);
+		}else{
+			block.onDownloadComplete(null, false, null);
+		}
 		
 		return convertView;
 	}

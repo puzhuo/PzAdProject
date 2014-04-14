@@ -16,7 +16,7 @@ import com.pzad.entities.BannerInfo;
 import com.pzad.entities.Statistic;
 import com.pzad.net.AdsInfoProvider;
 import com.pzad.net.AdsInfoProvider.OnAdsGotListener;
-import com.pzad.utils.PLog;
+import com.pzad.utils.StatUtil;
 
 public class BannerAdsCategory extends BaseAdsCategory {
 	
@@ -36,15 +36,8 @@ public class BannerAdsCategory extends BaseAdsCategory {
 			iv = new BannerImageView(currentActivity){
 				@Override
 				public void onFinishImageLoad(){
-					Statistic s = new Statistic();
-					s.setName(getBannerInfo().getName(), Statistic.TYPE_BANNER);
-					s.setExhibitionCount(1);
 					
-					Intent bannerIntent = new Intent();
-					bannerIntent.setAction(StatisticReceiver.ACTION_RECEIVE_STATISTIC);
-					bannerIntent.putExtra(StatisticReceiver.NAME, s);
-					
-					getContext().sendBroadcast(bannerIntent);
+					StatUtil.sendStatistics(getContext(), new Statistic().setName(getBannerInfo().getName(), Statistic.TYPE_BANNER).setExhibitionCount(1));
 				}
 			};
 			if(!AdsInfoProvider.getInstance(getContext()).isAdsDataAvailable()){
@@ -82,13 +75,11 @@ public class BannerAdsCategory extends BaseAdsCategory {
 
 	@Override
 	public Statistic getStatistic() {
-		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
 	public void stop() {
-		// TODO Auto-generated method stub
 		rootLayout.removeView(iv);
 	}
 
