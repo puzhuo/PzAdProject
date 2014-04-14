@@ -6,4 +6,6 @@ public interface Downloadable {
 	public void onDownloadComplete(String downloadLink, boolean isFileComplete, String resultFilePath);
 	public void refreshProgress(String downloadLink, float progress);
 	
+	public String getDownloadLink();
+	
 }

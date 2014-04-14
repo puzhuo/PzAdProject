@@ -10,6 +10,10 @@ public class AdsArgs {
 	public static final long SERVICE_DELAY_NORMAL = 1000L;
 	public static final long SERVICE_DELAY_FAST = 200L;
 	
+	public AdsArgs(){
+		
+	}
+	
 	public AdsArgs(int bannerAdsGravity){
 		category = BaseAdsCategory.CATEGORY_BANNER;
 		this.bannerAdsGravity = bannerAdsGravity;
@@ -18,5 +22,19 @@ public class AdsArgs {
 	public AdsArgs(long serviceDelayMillis){
 		category = BaseAdsCategory.CATEGORY_POPUP_ON_EXIT | BaseAdsCategory.CATEGORY_FLOAT;
 		this.serviceDelayMillis = serviceDelayMillis;
+	}
+	
+	public AdsArgs setGravity(int bannerAdsGravity){
+		category |= BaseAdsCategory.CATEGORY_BANNER;
+		this.bannerAdsGravity = bannerAdsGravity;
+		
+		return this;
+	}
+	
+	public AdsArgs setServiceDelay(long serviceDelayMillis){
+		category |= BaseAdsCategory.CATEGORY_POPUP_ON_EXIT | BaseAdsCategory.CATEGORY_FLOAT;
+		this.serviceDelayMillis = serviceDelayMillis;
+		
+		return this;
 	}
 }

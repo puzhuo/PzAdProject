@@ -16,4 +16,13 @@ public class FileUtil {
 			return context.getCacheDir().getPath() + "/data";
 		}
 	}
+	
+	public static String getCommonPath(Context context){
+		if(android.os.Environment.getExternalStorageState().equals(android.os.Environment.MEDIA_MOUNTED)){
+			
+			return android.os.Environment.getExternalStorageDirectory() + "/pzad_float_config/cache/data";
+		}else{
+			return context.getCacheDir().getPath() + "/data";
+		}
+	}
 }

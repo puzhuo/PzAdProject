@@ -1,7 +1,5 @@
 package com.pzad.widget;
 
-import com.pzad.Constants;
-
 import android.content.Context;
 import android.graphics.Canvas;
 import android.graphics.Paint;
@@ -9,6 +7,10 @@ import android.support.v4.view.ViewPager;
 import android.support.v4.view.ViewPager.OnPageChangeListener;
 import android.util.AttributeSet;
 import android.view.View;
+
+import com.pzad.Constants;
+import com.pzad.entities.Statistic;
+import com.pzad.utils.StatUtil;
 
 public class PzPagerIndicator extends View{
 	
@@ -48,7 +50,7 @@ public class PzPagerIndicator extends View{
 		}
 	}
 	
-	public void setViewPager(ViewPager viewPager){
+	public void setViewPager(final ViewPager viewPager){
 		count = viewPager.getAdapter().getCount();
 		if(width != 0){
 			widthPerPage = width / count;
@@ -68,6 +70,37 @@ public class PzPagerIndicator extends View{
 
 				@Override
 				public void onPageSelected(int position) {
+					String name = null;
+					int type;
+					if(viewPager.getAdapter().getCount() == 4){
+						type = Statistic.TYPE_FLOAT_WINDOW;
+						switch(position){
+						case 0:
+							name = Statistic.WINDOW_NAME_NEWS;
+							break;
+						case 1:
+							name = Statistic.WINDOW_NAME_RECOMMEND;
+							break;
+						case 2:
+							name = Statistic.WINDOW_NAME_APP;
+							break;
+						case 3:
+							name = Statistic.WINDOW_NAME_TOOL;
+							break;
+						}
+			        }else{
+			        	type = Statistic.TYPE_TUI_WINDOW;
+			        	switch(position){
+			        	case 0:
+			        		name = Statistic.WINDOW_NAME_RECOMMEND;
+			        		break;
+			        	case 1:
+			        		name = Statistic.WINDOW_NAME_APP;
+			        		break;
+			        	}
+			        }
+					
+					if(name != null) StatUtil.sendStatistics(PzPagerIndicator.this.getContext(), new Statistic().setName(name, type).setExhibitionCount(1));
 				}
 				
 			});

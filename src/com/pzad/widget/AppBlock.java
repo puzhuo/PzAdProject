@@ -1,15 +1,9 @@
 package com.pzad.widget;
 
-import java.io.File;
-
 import android.content.Context;
 import android.content.Intent;
-import android.content.pm.ApplicationInfo;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
 import android.content.res.ColorStateList;
 import android.graphics.drawable.StateListDrawable;
-import android.net.Uri;
 import android.text.TextUtils.TruncateAt;
 import android.util.AttributeSet;
 import android.util.TypedValue;
@@ -20,16 +14,12 @@ import android.widget.TextView;
 
 import com.pzad.Constants;
 import com.pzad.broadcast.StatisticReceiver;
-import com.pzad.concurrency.PzExecutorFactory;
 import com.pzad.entities.AppInfo;
 import com.pzad.entities.Statistic;
 import com.pzad.graphics.PzRoundCornerDrawable;
 import com.pzad.net.ApkDownloadProvider;
-import com.pzad.net.FileLoader;
 import com.pzad.net.api.Downloadable;
-import com.pzad.services.FloatWindowService;
 import com.pzad.utils.CalculationUtil;
-import com.pzad.utils.PLog;
 
 public class AppBlock extends RelativeLayout implements Downloadable{
 
@@ -38,10 +28,7 @@ public class AppBlock extends RelativeLayout implements Downloadable{
 	private TextView appSize;
 	private PzRatingBar ratingBar;
 	
-	private ProgressBar progressBar;
-	
-	private View dividerHorizontal;
-	private View dividerVertical;
+	private PzProgressBar progressBar;
 	
 	private AppInfo appInfo;
 	
@@ -105,7 +92,7 @@ public class AppBlock extends RelativeLayout implements Downloadable{
         addView(ratingBar, ratingLayoutParams);
         ratingBar.setRating(Math.round(Math.random() * 10) * 0.5F);
         
-        progressBar = new ProgressBar(context, attrs, defStyle);
+        progressBar = new PzProgressBar(context, attrs, defStyle);
         RelativeLayout.LayoutParams progressParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, RelativeLayout.LayoutParams.WRAP_CONTENT);
         progressParams.addRule(RelativeLayout.BELOW, appSize.getId());
         progressParams.setMargins(appNameMargin * 2, CalculationUtil.dip2px(context, 10), appNameMargin * 2, CalculationUtil.dip2px(context, 5) + 10);
@@ -116,28 +103,13 @@ public class AppBlock extends RelativeLayout implements Downloadable{
 		int backgroundCorner = CalculationUtil.dip2px(context, 4);
 		StateListDrawable stateDrawable = new StateListDrawable();
 		stateDrawable.addState(new int[]{android.R.attr.state_pressed}, new PzRoundCornerDrawable(backgroundCorner, 0xFFEEEEEE, 1, 0, 0, 0x33000000));
-		//int lightHighLight = (Constants.GLOBAL_HIGHLIGHT_COLOR & 0xFFFFFF) | 0x10000000;
 		stateDrawable.addState(new int[]{-android.R.attr.state_pressed}, new PzRoundCornerDrawable(backgroundCorner, 0xFFFFFFFF, 3, 0, 2, 0x33000000));
 		
-		/*
-		
-		int dividerMargin = CalculationUtil.dip2px(context, 20);
-		dividerVertical = new View(context, attrs, defStyle);
-		dividerVertical.setBackgroundColor(Constants.GLOBAL_SHADOW_COLOR);
-		RelativeLayout.LayoutParams verticalDividerParams = new RelativeLayout.LayoutParams(1, RelativeLayout.LayoutParams.FILL_PARENT);
-		verticalDividerParams.setMargins(0, dividerMargin, 0, dividerMargin);
-		verticalDividerParams.addRule(RelativeLayout.ALIGN_PARENT_LEFT);
-		addView(dividerVertical, verticalDividerParams);
-		
-		dividerHorizontal = new View(context, attrs, defStyle);
-		dividerHorizontal.setBackgroundColor(Constants.GLOBAL_SHADOW_COLOR);
-		RelativeLayout.LayoutParams horizontalDividerParams = new RelativeLayout.LayoutParams(RelativeLayout.LayoutParams.FILL_PARENT, 1);
-		horizontalDividerParams.setMargins(dividerMargin, 0, dividerMargin, 0);
-		horizontalDividerParams.addRule(RelativeLayout.ALIGN_PARENT_BOTTOM);
-		addView(dividerHorizontal, horizontalDividerParams);
-		 */
-		
 		setBackgroundDrawable(stateDrawable);
+	}
+	
+	public AppInfo getAppInfo(){
+		return appInfo;
 	}
 	
 	public void setAppInfo(final AppInfo appInfo){
@@ -151,24 +123,6 @@ public class AppBlock extends RelativeLayout implements Downloadable{
 
 				@Override
 				public void onClick(View v) {
-					Intent broadIntent = new Intent();
-					broadIntent.setAction(StatisticReceiver.ACTION_RECEIVE_STATISTIC);
-					
-					Statistic s = new Statistic();
-					s.setName(appInfo.getName(), Statistic.TYPE_APP);
-					s.setDownloadCount(1);
-					
-					broadIntent.putExtra(StatisticReceiver.NAME, s);
-					
-					getContext().sendBroadcast(broadIntent);
-					//getContext().sendBroadcast(new Intent(FloatWindowService.ACTION_HIDE_FLOAT_DETAIL));
-					
-					/*
-					Intent intent = new Intent(Intent.ACTION_VIEW);
-					intent.setData(Uri.parse(appInfo.getDownloadLink()));
-					intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-					getContext().startActivity(intent);
-					 */
 					
 					ApkDownloadProvider.getInstance(getContext()).runNewTask(appInfo.getDownloadLink(), appInfo.getName());
 					
@@ -230,14 +184,6 @@ public class AppBlock extends RelativeLayout implements Downloadable{
 			});
 		}
 	}
-	
-	public void setVerticalDividerVisible(int visibility){
-		dividerVertical.setVisibility(visibility);
-	}
-	
-	public void setHorizontalDividerVisible(int visibility){
-		dividerHorizontal.setVisibility(visibility);
-	}
 
 	@Override
 	public void refreshProgress(String downloadLink, float progress) {
@@ -262,36 +208,18 @@ public class AppBlock extends RelativeLayout implements Downloadable{
 	public void onDownloadComplete(String downloadLink, boolean isFileComplete, String resultFilePath) {
 		progressBar.setVisibility(View.GONE);
 		ratingBar.setVisibility(View.VISIBLE);
+	}
+	
+	@Override
+	public String getDownloadLink(){
+		if(appInfo != null) return appInfo.getDownloadLink();
 		
-		if(isFileComplete && downloadLink != null && resultFilePath != null){
-			File result = new File(resultFilePath);
-			if(result != null && result.exists()){
-				PLog.d("file", result.toString());
-				
-				Intent hideIntent = new Intent(FloatWindowService.ACTION_HIDE_FLOAT_DETAIL);
-				hideIntent.setData(new Uri.Builder().scheme("package").build());
-				getContext().sendBroadcast(hideIntent);
-				
-				PackageManager pm = getContext().getPackageManager();
-				PackageInfo pkgInfo = pm.getPackageArchiveInfo(result.getAbsolutePath(), PackageManager.GET_ACTIVITIES);
-				if(pkgInfo != null){
-					ApplicationInfo applicationInfo = pkgInfo.applicationInfo;
-					applicationInfo.sourceDir = result.getAbsolutePath();
-					applicationInfo.publicSourceDir = applicationInfo.sourceDir;
-					
-					Intent installationIntent = new Intent(FloatWindowService.ACTION_INSTALLATION_PROCESS);
-					installationIntent.putExtra("package_name", applicationInfo.packageName);
-					installationIntent.putExtra("app_name", appInfo.getName());
-					installationIntent.setData(new Uri.Builder().scheme("package").build());
-					
-					getContext().sendBroadcast(installationIntent);
-				}
-				
-				Intent installIntent = new Intent(Intent.ACTION_VIEW);
-				installIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-				installIntent.setDataAndType(Uri.fromFile(result), "application/vnd.android.package-archive");
-				getContext().startActivity(installIntent);
-			}
-		}
+		return null;
+	}
+	
+	@Override
+	protected void onDetachedFromWindow(){
+		super.onDetachedFromWindow();
+		ApkDownloadProvider.getInstance(getContext()).removeDownloadable(this);
 	}
 }

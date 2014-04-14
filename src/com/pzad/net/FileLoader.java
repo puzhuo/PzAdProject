@@ -15,10 +15,12 @@ import com.pzad.utils.PLog;
 
 public class FileLoader extends PzThread<File> {
 
-	String name;
-	String url;
+	private String name;
+	private String url;
 	
-	String filePath;
+	private String filePath;
+	
+	private boolean fileLoadFromLocal;
 
 	public FileLoader(Context context, String url, String name) {
 		this.url = url;
@@ -28,6 +30,8 @@ public class FileLoader extends PzThread<File> {
 		
 		if(!file.exists()) file.mkdirs();
 		filePath = file.getPath();
+		
+		fileLoadFromLocal = false;
 	}
 	
 	public static String getCacheFilePath(Context context){
@@ -47,10 +51,11 @@ public class FileLoader extends PzThread<File> {
 			
 			if(result.exists() && result.length() >= length){
 				PLog.d("urlLength:" + length, "fileLength:" + result.length());
+				fileLoadFromLocal = true;
 				return result;
 			}
 			
-			int bufferSize = 1024;
+			int bufferSize = 256;
 			
 			InputStream is = urlConnection.getInputStream();
 			OutputStream os = new FileOutputStream(result);
@@ -79,6 +84,10 @@ public class FileLoader extends PzThread<File> {
 
 	@Override
 	protected void onFinish(File result) {
+		onFinish(result, fileLoadFromLocal);
+	}
+	
+	protected void onFinish(File result, boolean fileLoadFromLocal){
 		
 	}
 	

@@ -11,6 +11,8 @@ import android.view.View;
 import com.pzad.broadcast.StatisticReceiver;
 import com.pzad.entities.BannerInfo;
 import com.pzad.entities.Statistic;
+import com.pzad.utils.ActivityLoader;
+import com.pzad.utils.StatUtil;
 import com.pzad.widget.UrlImageView;
 
 public class BannerImageView extends UrlImageView{
@@ -43,19 +45,10 @@ public class BannerImageView extends UrlImageView{
 		setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v) {
-				Intent bannerIntent = new Intent();
-				bannerIntent.setAction(StatisticReceiver.ACTION_RECEIVE_STATISTIC);
-				Statistic bannerS = new Statistic();
-				bannerS.setName(data.getName(), Statistic.TYPE_BANNER);
-				bannerS.setBrowseDetailCount(1);
-				bannerIntent.putExtra(StatisticReceiver.NAME, bannerS);
 				
-				getContext().sendBroadcast(bannerIntent);
+				StatUtil.sendStatistics(getContext(), new Statistic().setName(data.getName(), Statistic.TYPE_BANNER).setBrowseDetailCount(1));
 				
-				Intent intent = new Intent(Intent.ACTION_VIEW);
-				intent.setAction(Intent.ACTION_VIEW);
-				intent.setData(Uri.parse(BannerImageView.this.data.getLink()));
-				BannerImageView.this.getContext().startActivity(intent);
+				ActivityLoader.startOfficialBrowser(getContext(), data.getLink());
 			}
 		});
 	}
